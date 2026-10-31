@@ -1,5 +1,6 @@
 Clave,es,en,ja,fr,de,it
 titulo_sitio,Libros de {autor},Books by {autor},{autor}の本,Livres de {autor},Bücher von {autor},Libri di {autor}
+subtitulo_sitio,Cuadernos de Memini Zar,Notebooks by Memini Zar,Memini Zarのノート,Carnets de Memini Zar,Notizbücher von Memini Zar,Quaderni di Memini Zar
 lema,Descubre mis libros y consíguelos en la tienda Amazon de tu país.,Discover my books and get them from your country's Amazon store.,私の本をご紹介します。お住まいの国のAmazonでお求めいただけます。,Découvrez mes livres et procurez-les sur l'Amazon de votre pays.,Entdecken Sie meine Bücher und kaufen Sie sie bei Amazon in Ihrem Land.,Scopri i miei libri e acquistali sull'Amazon del tuo paese.
 catalogo,Catálogo,Catalog,作品一覧,Catalogue,Katalog,Catalogo
 comprar_desde,Compro desde:,I'm shopping from:,購入する国：,J'achète depuis :,Ich kaufe aus:,Acquisto da:
@@ -12,7 +13,7 @@ edicion_en,Edición en {idioma},{idioma} edition,{idioma}版,Édition en {idioma
 ver_mas,Ver más,Read more,続きを読む,Lire la suite,Mehr lesen,Leggi di più
 ver_menos,Ver menos,Show less,閉じる,Réduire,Weniger,Mostra meno
 sin_libros,Pronto habrá libros aquí.,Books coming soon.,まもなく公開します。,Des livres arrivent bientôt.,Bald gibt es hier Bücher.,Presto qui ci saranno dei libri.
-pie,© {anio} {autor}. Los botones te llevan a Amazon.,© {anio} {autor}. Buttons take you to Amazon.,© {anio} {autor}。ボタンからAmazonへ移動します。,© {anio} {autor}. Les boutons mènent à Amazon.,© {anio} {autor}. Die Schaltflächen führen zu Amazon.,© {anio} {autor}. I pulsanti portano ad Amazon.
+pie,© {anio} {autor} · Memini Zar. Los botones te llevan a Amazon.,© {anio} {autor} · Memini Zar. Buttons take you to Amazon.,© {anio} {autor} · Memini Zar。ボタンからAmazonへ移動します。,© {anio} {autor} · Memini Zar. Les boutons mènent à Amazon.,© {anio} {autor} · Memini Zar. Die Schaltflächen führen zu Amazon.,© {anio} {autor} · Memini Zar. I pulsanti portano ad Amazon.
 aviso_colombia,¿Estás en Colombia? Pide tu libro aquí y paga por Bre-B.,,,,,
 aviso_colombia_boton,Ir a Colombia,,,,,
 colombia_titulo,Pedidos en Colombia,,,,,

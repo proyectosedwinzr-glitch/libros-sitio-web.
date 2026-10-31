@@ -274,6 +274,7 @@
   function cabecera() {
     document.documentElement.lang = actual === 'colombia' ? 'es-CO' : actual;
     $('#titulo').textContent = t('titulo_sitio');
+    $('#subtitulo').textContent = t('subtitulo_sitio'); $('#subtitulo').hidden = !t('subtitulo_sitio');
     $('#lema').textContent = t('lema');
     document.title = t('titulo_sitio') + (actual === 'colombia' ? ' · Colombia' : '');
     const m = document.querySelector('meta[name=description]'); if (m && t('lema')) m.content = t('lema');
