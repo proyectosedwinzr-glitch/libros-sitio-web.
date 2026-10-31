@@ -63,7 +63,7 @@ td,th{border:1px solid #ccc;padding:6px;vertical-align:top;text-align:left}
 
 </main>
 <script>
-const ADMIN = <?= admin ?>;
+const ADMIN = <?!= admin ? 'true' : 'false' ?>;   // true solo con ?admin=1
 const LIBRO = '<?!= libro ?>';   // libro preseleccionado desde el sitio público (?libro=ID)
 let D, R = [], TK = '';
 const $ = s => document.querySelector(s);
