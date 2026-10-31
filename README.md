@@ -17,7 +17,8 @@ El sitio tiene **dos partes**:
 Crea una hoja con **3 pestañas** con estos nombres exactos (puedes importar los archivos de la carpeta `datos/` con *Archivo → Importar → Subir → "Insertar hojas nuevas"* y luego renombrarlas):
 
 ### Cómo funciona el sitio
-- **Las pestañas son el idioma en que está escrito el libro** (Español, English, 日本語…). Solo aparecen las pestañas de idiomas que ya tienen libros.
+- **🌐 Idioma del sitio** (arriba): el visitante elige entre los 6 idiomas (Español, English, 日本語, Français, Deutsch, Italiano). Cambia todos los textos. Se detecta solo según el navegador y se recuerda.
+- **Las pestañas son el idioma en que está escrito el libro** (Español, English, Français…). Solo aparecen las pestañas de idiomas que ya tienen libros. Un visitante puede leer el sitio en alemán y ver los libros en inglés ("Bücher auf Englisch").
 - **El visitante elige desde qué país compra** ("Compro desde: 🇩🇪 Alemania"). El sitio lo adivina por el navegador y lo recuerda. El botón principal lleva a la tienda Amazon de ese país.
 - Cada libro tiene además **"Otras tiendas Amazon"**, con las 14 tiendas que muestra KDP en "Ver en Amazon": US, UK, DE, FR, ES, IT, NL, PL, SE, BE, IE, JP, CA, AU.
 
@@ -84,6 +85,20 @@ El archivo `apps-script/libros-colombia.csv` trae los 6 libros listos, con el **
 3. En **Ubicación de importación** elige **Reemplazar hoja actual** → **Importar datos**.
 
 Al agregar un libro nuevo: añade una fila aquí con su ASIN como ID, y otra en la hoja del catálogo.
+
+
+### Versión 2 de la app de pedidos (carrito, seguimiento, clientes y novedades)
+La app ahora tiene **3 archivos** en Apps Script:
+- `Config.gs` → **tus datos** (clave, Bre-B, WhatsApp, envíos). Solo lo editas tú y las actualizaciones no lo tocan. No subas tus datos reales a GitHub.
+- `Código.gs` → el código (se reemplaza completo en cada actualización).
+- `index.html` → las pantallas (se reemplaza completo en cada actualización).
+
+Funciones:
+- **Carrito:** varios libros y varios ejemplares en un solo pedido. Envío gratis en Medellín y área metropolitana; $15.000 al resto de Colombia.
+- **Estados:** Pago por verificar → Pago verificado → Pedido en Amazon → Recibido de Amazon → Listo para entrega → Entregado (o Cancelado). Cada cambio queda en el historial y avisa al cliente por correo. En el panel también hay un botón para avisar por WhatsApp.
+- **Seguimiento:** `URL/exec?seguimiento=1` (el cliente escribe su número de pedido y su cédula).
+- **Clientes:** la pestaña `Clientes` se llena sola. Solo reciben novedades quienes marcaron la casilla, y cada correo trae un enlace para darse de baja.
+- **Panel:** `URL/exec?admin=1`, con las pestañas Pedidos, Clientes y Enviar novedad.
 
 ### Qué mejoró en la app de pedidos
 - **Panel más seguro**: la contraseña se envía una sola vez; después se usa una sesión temporal de 6 horas. Tras 5 intentos fallidos se bloquea 15 minutos.

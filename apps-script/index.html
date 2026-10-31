@@ -1,124 +1,222 @@
 <!DOCTYPE html>
 <html lang="es"><head><base target="_top"><meta charset="utf-8">
 <style>
-:root{--c:#1f4e79;--g:#f4f6f8}
+:root{--c:#1f4e79;--g:#f4f6f8;--ok:#15803d;--am:#b45309}
 *{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:var(--g);color:#222}
 header{background:var(--c);color:#fff;padding:18px;text-align:center}
 header a{color:#fff;font-size:14px}
 header h1{margin:0 0 2px}
 header .subtit{color:#f5c542;font-weight:bold;font-size:18px}
 header .lema{max-width:620px;margin:8px auto 0;opacity:.92}
-main{max-width:900px;margin:auto;padding:16px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+main{max-width:960px;margin:auto;padding:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
 .card,.box{background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 4px #0002}
-.card img,.ph{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px;background:#dde3ea;display:flex;align-items:center;justify-content:center;color:#678;font-weight:bold}
+.card{display:flex;flex-direction:column}
+.card img,.ph{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px;background:#dde3ea;display:flex;align-items:center;justify-content:center;color:#678;font-weight:bold;text-align:center}
+.card h3{font-size:16px;margin:10px 0 2px}
+.card .acc{margin-top:auto;display:flex;gap:6px;flex-wrap:wrap}
 button,.btn{background:var(--c);color:#fff;border:0;padding:10px 14px;border-radius:6px;cursor:pointer;text-decoration:none;display:inline-block;font-size:14px}
 button:disabled{opacity:.6;cursor:wait}
-.wa{background:#25d366}.gr{background:#666}
+.wa{background:#25d366}.gr{background:#666}.bl{background:#fff;color:var(--c);border:1px solid var(--c)}.rojo{background:#b91c1c}
+.mini{padding:5px 9px;font-size:13px}
 label{display:block;margin:10px 0 3px;font-weight:bold;font-size:14px}
+label.n{font-weight:normal}
 input:not([type=radio]):not([type=checkbox]),select,textarea{width:100%;padding:9px;border:1px solid #bbb;border-radius:6px;font-size:15px}
 h2{color:var(--c)}.tot{font-size:20px;font-weight:bold;color:var(--c)}
-table{border-collapse:collapse;width:100%;font-size:13px;background:#fff}
-td,th{border:1px solid #ccc;padding:6px;vertical-align:top;text-align:left}
-.pend{color:#b45309;font-weight:bold}.act{color:#15803d;font-weight:bold}
+.precio{font-size:18px;font-weight:bold;color:var(--c);margin:4px 0 8px}
+.carrito table{width:100%;border-collapse:collapse}
+.carrito td{padding:6px 4px;border-bottom:1px solid #e5e7eb;vertical-align:middle}
+.cant{display:inline-flex;align-items:center;gap:6px}
+.cant button{padding:2px 10px;font-size:16px}
+.vacio{color:#666;font-style:italic}
+.nota{font-size:13px;color:#555}
+.chk{display:flex;gap:8px;align-items:flex-start;font-weight:normal;font-size:14px}
+.chk input{margin-top:3px}
+table.t{border-collapse:collapse;width:100%;font-size:13px;background:#fff}
+table.t td,table.t th{border:1px solid #ccc;padding:6px;vertical-align:top;text-align:left}
+.e0{color:var(--am);font-weight:bold}.eok{color:var(--ok);font-weight:bold}.ecan{color:#b91c1c;font-weight:bold}.emid{color:var(--c);font-weight:bold}
+.pasos{list-style:none;padding:0;margin:14px 0}
+.pasos li{padding:8px 10px 8px 36px;position:relative;color:#888}
+.pasos li:before{content:'';position:absolute;left:10px;top:11px;width:14px;height:14px;border-radius:50%;border:2px solid #bbb;background:#fff}
+.pasos li.hecho{color:#222}.pasos li.hecho:before{background:var(--ok);border-color:var(--ok)}
+.pasos li.actual{font-weight:bold;color:var(--c)}.pasos li.actual:before{background:var(--c);border-color:var(--c)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{background:#dfe6ee;color:#222}.tabs button.on{background:var(--c);color:#fff}
+.hist{font-size:12px;color:#555;white-space:pre-line;margin-top:4px}
 @media print{.no{display:none}header{display:none}}
 </style></head><body>
 <header><h1>Libros de Edwin Zar</h1>
   <div class="subtit">Cuadernos de Memini Zar</div>
   <div class="lema">Escoge tus libros, haz el pedido y paga por Bre-B. Nosotros compramos tu libro y lo llevamos a la dirección que selecciones.</div>
-  <div id="volver" style="display:none;margin-top:6px"><a target="_blank">← Ver todos mis libros</a></div></header>
+  <div style="margin-top:6px"><a id="volver" target="_blank" style="display:none">← Ver todos nuestros libros</a>
+  <span id="sepSeg" style="display:none"> · </span><a id="linkSeg" style="display:none">🔎 Consultar mi pedido</a></div></header>
 <main>
 
-<div id="tienda">
+<!-- ================= TIENDA ================= -->
+<div id="tienda" style="display:none">
   <h2>Catálogo</h2><div class="grid" id="cat">Cargando…</div>
-  <h2>Haz tu pedido</h2>
+
+  <h2 id="tuPedido">Tu pedido</h2>
   <form id="f" class="box">
-    <label>Libro</label><select id="libro" name="libroId" onchange="tot()"></select>
-    <label>Nombre completo *</label><input name="nombre" required>
+    <div class="carrito" id="carrito"></div>
+
+    <label>Entrega *</label>
+    <label class="n"><input type="radio" name="entrega" id="eMed" checked onchange="tot()"> <span id="lMed"></span></label>
+    <label class="n"><input type="radio" name="entrega" id="eFuera" onchange="tot()"> <span id="lFuera"></span></label>
+
+    <label>Nombre completo *</label><input name="nombre" required autocomplete="name">
     <label>Cédula *</label><input name="cedula" required inputmode="numeric">
-    <label>Correo electrónico *</label><input name="email" type="email" required>
-    <label>Teléfono / WhatsApp *</label><input name="telefono" type="tel" required>
-    <label>Tipo de entrega *</label>
-    <label style="font-weight:normal"><input type="radio" name="entrega" value="Medellín" checked onchange="tot()"> Entrega en Medellín</label>
-    <label style="font-weight:normal"><input type="radio" name="entrega" value="Fuera de Medellín" onchange="tot()"> Fuera de Medellín (el envío te lo confirmo yo)</label>
+    <label>Correo electrónico *</label><input name="email" type="email" required autocomplete="email">
+    <label>Teléfono / WhatsApp *</label><input name="telefono" type="tel" required autocomplete="tel">
     <label>Ciudad / municipio *</label><input name="ciudad" required>
-    <label>Dirección *</label><input name="direccion" required>
+    <label>Dirección *</label><input name="direccion" required autocomplete="street-address">
     <label>Barrio *</label><input name="barrio" required>
     <label>Indicaciones adicionales</label><textarea name="indicaciones" rows="2"></textarea>
+
     <div class="box" style="background:var(--g);margin-top:14px">
-      <b>Total a pagar:</b> <span class="tot" id="tot"></span>
+      <div id="resumen"></div>
       <p>Paga por <b>Bre-B</b> a la llave <b id="llave"></b><br>Titular: <b id="titular"></b></p>
       <a class="btn wa" id="wa" target="_blank">💬 Escribir por WhatsApp</a>
     </div>
     <label>Comprobante de pago (imagen o PDF, máx. 5 MB) *</label>
     <input type="file" id="comp" accept="image/*,.pdf" required>
+
+    <label class="chk"><input type="checkbox" id="autoriza" required> <span>Autorizo el tratamiento de mis datos personales para gestionar mi pedido y su entrega (Ley 1581 de 2012). *</span></label>
+    <label class="chk"><input type="checkbox" id="novedades"> <span>Quiero recibir correos sobre nuevos libros y novedades. Puedo darme de baja cuando quiera.</span></label>
+    <p class="nota">Tus datos solo se usan para tu pedido y, si lo aceptas, para avisarte de novedades. No los compartimos con nadie.</p>
     <p><button id="envia">Enviar pedido</button></p>
   </form>
   <div id="ok" class="box" style="display:none"></div>
 </div>
 
+<!-- ================= SEGUIMIENTO ================= -->
+<div id="seguir" style="display:none">
+  <h2>🔎 Consulta tu pedido</h2>
+  <div class="box">
+    <label>Número de pedido</label><input id="sId" placeholder="Ejemplo: P261031180158">
+    <label>Cédula</label><input id="sCed" inputmode="numeric" onkeydown="if(event.key==='Enter')consultar()">
+    <p><button id="bCons" onclick="consultar()">Consultar</button></p>
+  </div>
+  <div id="sRes"></div>
+</div>
+
+<!-- ================= PANEL ================= -->
 <div id="admin" style="display:none">
-  <h2>Panel de pedidos</h2>
+  <h2>Panel</h2>
   <div id="login" class="box no"><label>Contraseña</label><input type="password" id="pw" onkeydown="if(event.key==='Enter')entrar()"><p><button id="bentrar" onclick="entrar()">Entrar</button></p></div>
   <div id="panel" style="display:none">
-    <p class="no"><button onclick="csv()">⬇ Exportar a Excel (CSV)</button> <button class="gr" onclick="print()">🖨 Imprimir</button> <button class="gr" onclick="cargar()">↻ Actualizar</button> <button class="gr" onclick="cerrar()">Salir</button></p>
-    <div style="overflow-x:auto"><table id="tb"></table></div>
+    <div class="tabs no">
+      <button class="on" data-t="pPedidos" onclick="tab(this)">📦 Pedidos</button>
+      <button data-t="pClientes" onclick="tab(this)">👥 Clientes</button>
+      <button data-t="pNovedad" onclick="tab(this)">✉️ Enviar novedad</button>
+      <button class="gr" onclick="cerrar()">Salir</button>
+    </div>
+
+    <div id="pPedidos">
+      <p class="no">
+        <select id="filtro" style="width:auto" onchange="tabla()">
+          <option value="curso">En curso</option><option value="todos">Todos</option>
+          <option value="Entregado">Entregados</option><option value="Cancelado">Cancelados</option>
+        </select>
+        <label class="n" style="display:inline"><input type="checkbox" id="avisar" checked> Avisar al cliente por correo al cambiar el estado</label>
+      </p>
+      <p class="no"><button onclick="csv(R,'pedidos.csv')">⬇ Exportar pedidos (CSV)</button> <button class="gr" onclick="print()">🖨 Imprimir</button> <button class="gr" onclick="cargar()">↻ Actualizar</button></p>
+      <div style="overflow-x:auto"><table class="t" id="tb"></table></div>
+    </div>
+
+    <div id="pClientes" style="display:none">
+      <p class="no"><button onclick="csv(CL,'clientes.csv')">⬇ Exportar clientes (CSV)</button> <button class="gr" onclick="cargarClientes()">↻ Actualizar</button></p>
+      <p id="resCli"></p>
+      <div style="overflow-x:auto"><table class="t" id="tbCli"></table></div>
+    </div>
+
+    <div id="pNovedad" style="display:none" class="box">
+      <p>Se envía por correo <b>solo a los clientes que aceptaron recibir novedades</b> (<b id="nSus">…</b>). Cada correo incluye un enlace para darse de baja.</p>
+      <label>Asunto</label><input id="nAsunto" placeholder="Ejemplo: Ya salió el Volumen 2 de Letras con historia">
+      <label>Mensaje</label><textarea id="nMsg" rows="8" placeholder="Cuéntales qué hay de nuevo. Puedes pegar enlaces."></textarea>
+      <p><button class="bl" onclick="novedad(true)">Enviarme una prueba</button> <button onclick="novedad(false)">Enviar a los clientes</button></p>
+      <p class="nota">Gmail permite unos 100 correos al día. Si quedan pendientes, vuelve a pulsar "Enviar a los clientes" otro día con el mismo asunto y mensaje: no se repite a quien ya lo recibió.</p>
+      <p id="nRes"></p>
+    </div>
   </div>
 </div>
 
 </main>
 <script>
-const ADMIN = <?!= admin ? 'true' : 'false' ?>;   // true solo con ?admin=1
-const LIBRO = '<?!= libro ?>';   // libro preseleccionado desde el sitio público (?libro=ID)
-let D, R = [], TK = '';
+const MODO = '<?!= modo ?>';
+const LIBRO = '<?!= libro ?>';     // libro que llega desde el sitio público (?libro=ASIN)
+const PEDIDO = '<?!= pedido ?>';   // pedido que llega desde el correo (?pedido=ID)
+let D, R = [], CL = [], TK = '', META = {};
+const CARRO = {};                  // { idLibro: cantidad }
 const $ = s => document.querySelector(s);
-const money = n => '$' + Number(n).toLocaleString('es-CO');
+const money = n => '$' + Number(n || 0).toLocaleString('es-CO');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ver = (id, si) => { $(id).style.display = si ? '' : 'none'; };
 
-if (ADMIN) {
-  $('#tienda').style.display = 'none'; $('#admin').style.display = 'block';
-  try { TK = sessionStorage.getItem('tk') || ''; } catch (e) {}
-  if (TK) cargar();
-}
-else google.script.run.withSuccessHandler(d => { D = d; pintar(); }).datosInicio();
+ver('#' + (MODO === 'admin' ? 'admin' : MODO === 'seguimiento' ? 'seguir' : 'tienda'), true);
+if (MODO !== 'admin') google.script.run.withSuccessHandler(d => { D = d; inicio(); }).datosInicio();
+if (MODO === 'admin') { try { TK = sessionStorage.getItem('tk') || ''; } catch (e) {} if (TK) cargar(); }
+if (MODO === 'seguimiento' && PEDIDO) $('#sId').value = PEDIDO;
 
-function pintar() {
+function urlBase() { return location.href.split('?')[0]; }
+function inicio() {
+  if (D.sitio) { ver('#volver', true); $('#volver').href = D.sitio; }
+  ver('#sepSeg', !!D.sitio);
+  // Enlace de seguimiento: se arma con la URL pública de la app
+  google.script.run.withSuccessHandler(u => { if (u) { ver('#linkSeg', true); $('#linkSeg').href = u + '?seguimiento=1'; } else ver('#sepSeg', false); }).withFailureHandler(() => ver('#sepSeg', false)).urlPublica();
+  if (MODO !== 'tienda') return;
+  $('#lMed').textContent = D.entregaMed + ' — envío ' + (D.envioMed ? money(D.envioMed) : 'GRATIS');
+  $('#lFuera').textContent = D.entregaFuera + ' — envío ' + money(D.envioFuera);
   $('#cat').innerHTML = D.libros.map(l => `<div class="card">
-    ${l.portada ? `<img src="${esc(l.portada)}" alt="">` : '<div class="ph">PORTADA AQUÍ</div>'}
-    <h3>${esc(l.titulo)}</h3><div>${esc(l.autor)}</div><p class="tot">${money(l.precio)}</p>
-    <button onclick="elegir('${esc(l.id)}')">Pedir</button>
-    <a class="btn gr" href="${esc(l.amazon)}" target="_blank">Ver en Amazon</a></div>`).join('');
-  $('#libro').innerHTML = D.libros.map(l => `<option value="${esc(l.id)}">${esc(l.titulo)} — ${money(l.precio)}</option>`).join('');
+    ${l.portada ? `<img src="${esc(l.portada)}" alt="" loading="lazy">` : `<div class="ph">${esc(l.titulo)}</div>`}
+    <h3>${esc(l.titulo)}</h3><div class="nota">${esc(l.autor)}</div><div class="precio">${money(l.precio)}</div>
+    <div class="acc"><button onclick="agregar('${esc(l.id)}')">➕ Agregar</button>
+    ${l.amazon ? `<a class="btn gr" href="${esc(l.amazon)}" target="_blank">Ver en Amazon</a>` : ''}</div></div>`).join('');
   $('#llave').textContent = D.breb.llave; $('#titular').textContent = D.breb.titular;
-  if (D.sitio) { $('#volver').style.display = 'block'; $('#volver a').href = D.sitio; }
-  if (LIBRO && D.libros.some(l => String(l.id) === LIBRO)) { $('#libro').value = LIBRO; setTimeout(() => $('#f').scrollIntoView({behavior:'smooth'}), 300); }
+  if (LIBRO && D.libros.some(l => l.id === LIBRO)) { CARRO[LIBRO] = 1; setTimeout(() => $('#tuPedido').scrollIntoView({behavior:'smooth'}), 300); }
   tot();
 }
-function elegir(id) { $('#libro').value = id; tot(); $('#f').scrollIntoView({behavior:'smooth'}); }
+
+// ---------- Carrito ----------
+function agregar(id) { CARRO[id] = Math.min((CARRO[id] || 0) + 1, 20); tot(); $('#tuPedido').scrollIntoView({behavior:'smooth'}); }
+function cambiar(id, n) { CARRO[id] = Math.max(0, Math.min((CARRO[id] || 0) + n, 20)); if (!CARRO[id]) delete CARRO[id]; tot(); }
+function items() { return Object.keys(CARRO).map(id => ({ l: D.libros.find(x => x.id === id), cant: CARRO[id] })).filter(x => x.l); }
 function tot() {
-  const l = D.libros.find(x => x.id == $('#libro').value); if (!l) return;
-  const med = document.querySelector('[name=entrega]:checked').value === 'Medellín';
-  const t = med ? money(Number(l.precio) + D.envioMed) + ' (incluye envío ' + money(D.envioMed) + ')'
-                : money(l.precio) + ' + envío por confirmar';
-  $('#tot').textContent = t;
-  $('#wa').href = 'https://wa.me/' + D.whatsapp + '?text=' + encodeURIComponent('Hola, quiero pedir "' + l.titulo + '". Total: ' + t);
+  const it = items();
+  $('#carrito').innerHTML = it.length ? '<table>' + it.map(x => `<tr>
+      <td>${esc(x.l.titulo)}<div class="nota">${money(x.l.precio)} c/u</div></td>
+      <td><span class="cant"><button type="button" class="bl" onclick="cambiar('${esc(x.l.id)}',-1)">−</button><b>${x.cant}</b><button type="button" class="bl" onclick="cambiar('${esc(x.l.id)}',1)">+</button></span></td>
+      <td style="text-align:right">${money(x.l.precio * x.cant)}</td></tr>`).join('') + '</table>'
+    : '<p class="vacio">Tu pedido está vacío. Pulsa "➕ Agregar" en los libros que quieras (puedes pedir varios y varios ejemplares).</p>';
+  const sub = it.reduce((a, x) => a + x.l.precio * x.cant, 0);
+  const med = $('#eMed').checked, env = med ? D.envioMed : D.envioFuera;
+  $('#resumen').innerHTML = it.length ? `Subtotal: <b>${money(sub)}</b><br>Envío: <b>${env ? money(env) : 'GRATIS'}</b><br><b>Total a pagar:</b> <span class="tot">${money(sub + env)}</span>`
+    : '<b>Total a pagar:</b> <span class="tot">$0</span>';
+  const txt = it.map(x => x.cant + ' × ' + x.l.titulo).join(', ');
+  $('#wa').href = 'https://wa.me/' + D.whatsapp + '?text=' + encodeURIComponent(it.length ? 'Hola, quiero pedir: ' + txt + '. Total: ' + money(sub + env) : 'Hola, quiero hacer un pedido.');
 }
 
 $('#f').onsubmit = e => {
   e.preventDefault();
   if ($('#envia').disabled) return;              // evita doble clic
+  const it = items();
+  if (!it.length) return alert('Agrega al menos un libro a tu pedido.');
   const file = $('#comp').files[0];
   if (!file || file.size > 5e6) return alert('Adjunta un comprobante de máximo 5 MB.');
+  if (!$('#autoriza').checked) return alert('Debes autorizar el tratamiento de tus datos para hacer el pedido.');
   const d = Object.fromEntries(new FormData($('#f')));
+  d.entrega = $('#eMed').checked ? D.entregaMed : D.entregaFuera;
+  d.items = it.map(x => ({ id: x.l.id, cant: x.cant }));
+  d.autorizaDatos = true; d.novedades = $('#novedades').checked;
   $('#envia').disabled = true; $('#envia').textContent = 'Enviando…';
   const r = new FileReader();
   r.onload = () => google.script.run
     .withSuccessHandler(res => {
-      const id = res && res.id ? res.id : res;
-      $('#f').style.display = 'none'; $('#ok').style.display = 'block';
-      $('#ok').innerHTML = res && res.repetido
-        ? `<h2>ℹ️ Ya teníamos tu pedido</h2><p>Hace poco recibimos un pedido igual. Su número es <b>${esc(id)}</b>, no hace falta enviarlo otra vez. Te confirmo por WhatsApp.</p>`
-        : `<h2>✅ ¡Pedido recibido!</h2><p>Número: <b>${esc(id)}</b>. Quedó <b>pendiente de activación</b>: revisaré tu pago y te confirmo por WhatsApp.</p>`;
+      ver('#f', false); ver('#ok', true);
+      const seg = $('#linkSeg').href ? `<p><a class="btn bl" href="${esc($('#linkSeg').href.replace('seguimiento=1', 'pedido=' + encodeURIComponent(res.id)))}">🔎 Ver el estado de mi pedido</a></p>` : '';
+      $('#ok').innerHTML = res.repetido
+        ? `<h2>ℹ️ Ya teníamos tu pedido</h2><p>Hace poco recibimos un pedido igual. Su número es <b>${esc(res.id)}</b>; no hace falta enviarlo otra vez.</p>${seg}`
+        : `<h2>✅ ¡Pedido recibido!</h2><p>Número: <b>${esc(res.id)}</b>. Guárdalo para consultar tu pedido.</p><p>Vamos a verificar tu pago y te avisaremos por correo y WhatsApp en cada paso: pago verificado, pedido en Amazon, recibido, listo para entrega y entregado.</p>${seg}`;
       $('#ok').scrollIntoView({behavior:'smooth'});
     })
     .withFailureHandler(er => { alert(er.message); $('#envia').disabled = false; $('#envia').textContent = 'Enviar pedido'; })
@@ -126,12 +224,26 @@ $('#f').onsubmit = e => {
   r.readAsDataURL(file);
 };
 
-// ---- Panel ----
+// ---------- Seguimiento ----------
+function consultar() {
+  $('#bCons').disabled = true;
+  google.script.run.withSuccessHandler(s => {
+    $('#bCons').disabled = false;
+    const cancel = s.estado === 'Cancelado';
+    $('#sRes').innerHTML = `<div class="box"><h3>Pedido ${esc(s.id)}</h3>
+      <p>${esc(s.detalle)}<br>Total: <b>${money(s.total)}</b> · ${esc(s.entrega)}</p>
+      <p class="${cancel ? 'ecan' : s.paso === s.estados.length - 1 ? 'eok' : 'emid'}">${esc(s.mensaje)}</p>
+      ${cancel ? '' : `<ul class="pasos">${s.estados.map((e, i) => `<li class="${i < s.paso ? 'hecho' : i === s.paso ? 'actual hecho' : ''}">${esc(e)}</li>`).join('')}</ul>`}
+      <div class="hist"><b>Historial</b>\n${esc(s.historial.join('\n'))}</div></div>`;
+  }).withFailureHandler(e => { $('#bCons').disabled = false; $('#sRes').innerHTML = `<p class="ecan">${esc(e.message)}</p>`; })
+    .seguimiento($('#sId').value, $('#sCed').value);
+}
+
+// ---------- Panel ----------
 function guardarTK(t) { TK = t; try { t ? sessionStorage.setItem('tk', t) : sessionStorage.removeItem('tk'); } catch (e) {} }
 function fallo(e) {
   if (String(e.message).indexOf('SESION:') === 0) {
-    guardarTK(''); $('#panel').style.display = 'none'; $('#login').style.display = 'block';
-    alert(e.message.replace('SESION: ', ''));
+    guardarTK(''); ver('#panel', false); ver('#login', true); alert(e.message.replace('SESION: ', ''));
   } else alert(e.message);
 }
 function entrar() {
@@ -141,33 +253,75 @@ function entrar() {
     .withFailureHandler(e => { $('#bentrar').disabled = false; alert(e.message); })
     .entrar($('#pw').value);
 }
-function cerrar() { google.script.run.salir(TK); guardarTK(''); R = []; $('#tb').innerHTML = ''; $('#panel').style.display = 'none'; $('#login').style.display = 'block'; }
+function cerrar() { google.script.run.salir(TK); guardarTK(''); R = []; $('#tb').innerHTML = ''; ver('#panel', false); ver('#login', true); }
+function tab(b) {
+  document.querySelectorAll('.tabs button[data-t]').forEach(x => { x.classList.toggle('on', x === b); ver('#' + x.dataset.t, x === b); });
+  if (b.dataset.t === 'pClientes') cargarClientes();
+  if (b.dataset.t === 'pNovedad') google.script.run.withSuccessHandler(n => $('#nSus').textContent = n + ' clientes').withFailureHandler(fallo).contarSuscritos(TK);
+}
 function cargar() {
   google.script.run.withSuccessHandler(r => {
-    R = r; $('#login').style.display = 'none'; $('#panel').style.display = 'block'; tabla();
+    META = r; R = r.pedidos; ver('#login', false); ver('#panel', true); tabla();
   }).withFailureHandler(fallo).listar(TK);
 }
+function claseEstado(e) { return e === 'Cancelado' ? 'ecan' : e === 'Entregado' ? 'eok' : e === META.estados[0] ? 'e0' : 'emid'; }
+function telWa(t) { let n = String(t || '').replace(/\D/g, ''); if (n.length === 10 && n[0] === '3') n = '57' + n; return n; }
 function tabla() {
-  $('#tb').innerHTML = '<tr><th>Estado</th><th>Pedido</th><th>Cliente</th><th>Entrega</th><th>Total</th><th>Envío</th><th>Verificada</th><th>Pago</th></tr>' +
-  R.map(r => { const a = r['Estado'] === 'Activo'; return `<tr>
-    <td class="${a ? 'act' : 'pend'}">${esc(r['Estado'])}<br>${a ? '' : `<button class="no" onclick="set('${esc(r.ID)}','Estado','Activo')">Activar</button>`}</td>
-    <td>${esc(r.ID)}<br>${esc(r['Fecha'])}<br><b>${esc(r['Libro'])}</b></td>
-    <td>${esc(r['Nombre'])}<br>CC ${esc(r['Cédula'])}<br>${esc(r['Teléfono'])}<br>${esc(r['Email'])}</td>
-    <td>${esc(r['Entrega'])}<br>${esc(r['Dirección'])}, ${esc(r['Barrio'])}<br>${esc(r['Ciudad'])}<br><i>${esc(r['Indicaciones'])}</i></td>
-    <td>${money(r['Total'])}</td>
+  const f = $('#filtro').value;
+  const lista = R.filter(r => f === 'todos' ? true : f === 'curso' ? !['Entregado', 'Cancelado'].includes(r.Estado) : r.Estado === f);
+  $('#tb').innerHTML = '<tr><th>Estado</th><th>Pedido</th><th>Cliente</th><th>Entrega</th><th>Total</th><th>Envío</th><th>Pago</th></tr>' +
+  (lista.length ? '' : '<tr><td colspan="7" class="vacio">No hay pedidos en esta lista.</td></tr>') +
+  lista.map(r => {
+    const i = META.estados.indexOf(r.Estado), sig = i >= 0 && i < META.estados.length - 1 ? META.estados[i + 1] : '';
+    const msg = 'Hola ' + String(r.Nombre).split(' ')[0] + ', te escribimos de ' + META.tienda + '. Tu pedido ' + r.ID + ' (' + r.Libro + '): ' +
+      (META.mensajes[r.Estado] || r.Estado) + (META.url ? ' Consulta tu pedido: ' + META.url + '?pedido=' + r.ID : '');
+    return `<tr>
+    <td><span class="${claseEstado(r.Estado)}">${esc(r.Estado)}</span>
+      ${sig ? `<br><button class="mini no" onclick="estado('${esc(r.ID)}','${esc(sig)}')">Pasar a: ${esc(sig)}</button>` : ''}
+      <br><select class="no" style="width:auto;font-size:12px;padding:3px;margin-top:4px" onchange="if(this.value)estado('${esc(r.ID)}',this.value)">
+        <option value="">Otro estado…</option>${META.estados.concat(META.cancelado).filter(e => e !== r.Estado).map(e => `<option>${esc(e)}</option>`).join('')}</select>
+      <div class="hist">${esc(r.Historial || '')}</div></td>
+    <td>${esc(r.ID)}<br>${esc(r.Fecha)}<br><b>${esc(r.Libro)}</b></td>
+    <td>${esc(r.Nombre)}<br>CC ${esc(r['Cédula'])}<br>${esc(r['Teléfono'])}<br>${esc(r.Email)}
+      ${r['Acepta novedades'] === true ? '<br>✉️ acepta novedades' : ''}
+      <br><a class="btn wa mini no" target="_blank" href="https://wa.me/${telWa(r['Teléfono'])}?text=${encodeURIComponent(msg)}">💬 Avisar por WhatsApp</a></td>
+    <td>${esc(r.Entrega)}<br>${esc(r['Dirección'])}, ${esc(r.Barrio)}<br>${esc(r.Ciudad)}<br><i>${esc(r.Indicaciones)}</i></td>
+    <td>${money(r.Total)}</td>
     <td><input style="width:80px" value="${esc(r['Envío'])}" onchange="set('${esc(r.ID)}','Envío',this.value)"></td>
-    <td><input type="checkbox" ${r['Verificada'] === true ? 'checked' : ''} onchange="set('${esc(r.ID)}','Verificada',this.checked)"></td>
-    <td><a class="no" href="${esc(r['Comprobante'])}" target="_blank">Ver</a></td></tr>`; }).join('');
+    <td><a class="no" href="${esc(r.Comprobante)}" target="_blank">Ver comprobante</a><br>${r.Verificada === true ? '<span class="eok">✔ verificado</span>' : ''}</td></tr>`; }).join('');
 }
-function set(id, campo, val) {
-  google.script.run.withSuccessHandler(cargar).withFailureHandler(fallo).actualizar(TK, id, campo, val);
+function estado(id, e) {
+  if (!confirm('¿Cambiar el pedido ' + id + ' a "' + e + '"?')) return tabla();
+  google.script.run.withSuccessHandler(res => { if (res.correo) console.log('Correo enviado'); cargar(); })
+    .withFailureHandler(fallo).cambiarEstado(TK, id, e, $('#avisar').checked);
 }
-function csv() {
-  const c = Object.keys(R[0] || {});
+function set(id, campo, val) { google.script.run.withSuccessHandler(cargar).withFailureHandler(fallo).actualizar(TK, id, campo, val); }
+
+function cargarClientes() {
+  google.script.run.withSuccessHandler(c => {
+    CL = c; const sus = c.filter(x => x['Acepta novedades'] === true).length;
+    $('#resCli').innerHTML = `<b>${c.length}</b> clientes · <b>${sus}</b> aceptan novedades`;
+    $('#tbCli').innerHTML = '<tr><th>Nombre</th><th>Contacto</th><th>Ciudad</th><th>Pedidos</th><th>Total comprado</th><th>Último pedido</th><th>Novedades</th></tr>' +
+      c.map(x => `<tr><td>${esc(x.Nombre)}<br>CC ${esc(x['Cédula'])}</td><td>${esc(x.Email)}<br>${esc(x['Teléfono'])}</td><td>${esc(x.Ciudad)}</td>
+      <td>${esc(x.Pedidos)}</td><td>${money(x['Total comprado'])}</td><td>${esc(x['Último pedido'])}</td><td>${x['Acepta novedades'] === true ? '✔ sí' : 'no'}</td></tr>`).join('');
+  }).withFailureHandler(fallo).listarClientes(TK);
+}
+function novedad(prueba) {
+  const a = $('#nAsunto').value, m = $('#nMsg').value;
+  if (!prueba && !confirm('¿Enviar este correo a todos los clientes que aceptaron novedades?')) return;
+  $('#nRes').textContent = 'Enviando…';
+  google.script.run.withSuccessHandler(r => {
+    $('#nRes').innerHTML = r.prueba ? '✅ Prueba enviada a tu correo.'
+      : `✅ Enviados: <b>${r.enviados}</b>.` + (r.pendientes ? ` Quedan <b>${r.pendientes}</b> pendientes por el límite diario de Gmail: vuelve a pulsar "Enviar" mañana.` : '');
+  }).withFailureHandler(e => { $('#nRes').textContent = ''; fallo(e); }).enviarNovedad(TK, a, m, prueba);
+}
+function csv(datos, nombre) {
+  const c = Object.keys(datos[0] || {});
+  if (!c.length) return alert('No hay datos para exportar.');
   const celda = x => { let s = String(x ?? ''); if (/^[=@]|^[+\-](?!\d)/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
-  const t = [c, ...R.map(r => c.map(k => r[k]))].map(a => a.map(celda).join(';')).join('\n');
+  const t = [c, ...datos.map(r => c.map(k => r[k]))].map(a => a.map(celda).join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['﻿' + t], { type: 'text/csv' }));
-  a.download = 'pedidos.csv'; a.click();
+  a.download = nombre; a.click();
 }
 </script></body></html>

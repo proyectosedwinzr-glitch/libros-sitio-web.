@@ -19,10 +19,10 @@
     sin_libros: 'Pronto habrá libros aquí.', pie: '© {anio} {autor}',
     colombia_titulo: 'Pedidos en Colombia', colombia_boton: 'Hacer mi pedido', colombia_pedir: 'Pedir en Colombia',
     colombia_whatsapp: 'Escribir por WhatsApp', colombia_no_disponible: 'El formulario de pedidos estará disponible muy pronto.',
-    aviso_colombia: '¿Estás en Colombia? Pide tu libro aquí y paga por Bre-B.', aviso_colombia_boton: 'Ir a Colombia'
+    aviso_colombia: '¿Estás en Colombia? Pide aquí tus libros y paga por Bre-B.', colombia_seguimiento: 'Consultar mi pedido', aviso_colombia_boton: 'Ir a Colombia'
   };
 
-  DEF.comprar_desde = 'Compro desde:';
+  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}';
 
   // Tiendas de Amazon por país (código ISO). Las 14 primeras son las de libros de tapa blanda en KDP.
   const TIENDAS = {
@@ -38,7 +38,9 @@
   const etiquetaPais = c => (c === 'GB' ? 'UK' : c);
   const bandera = c => String.fromCodePoint(...[...c].map(x => 127397 + x.charCodeAt(0)));
 
-  let IDIOMAS = [], VISIBLES = [], LIBROS = [], TEXTOS = {}, actual = 'es', PAIS = 'US';
+  // actual = pestaña de libros (idioma en que está escrito el libro, o 'colombia')
+  // UI = idioma en que se muestran los textos del sitio (selector 🌐, los 6 idiomas)
+  let IDIOMAS = [], VISIBLES = [], LIBROS = [], TEXTOS = {}, actual = 'es', UI = 'es', PAIS = 'US';
 
   // ---------- Lectura de datos ----------
   function parseCSV(t) {
@@ -133,7 +135,7 @@
   // ---------- Utilidades de presentación ----------
   function t(k, vars, lang) {
     const fila = TEXTOS[k] || {};
-    const s = fila[norm(lang || actual)] || fila.es || DEF[k] || '';
+    const s = fila[norm(lang || (actual === 'colombia' ? 'es' : UI))] || fila.es || DEF[k] || '';
     const v = Object.assign({ autor: C.AUTOR || '', anio: new Date().getFullYear() }, vars || {});
     return s.replace(/\{(\w+)\}/g, (m, x) => (x in v ? v[x] : m));
   }
@@ -229,7 +231,7 @@
   function selectorPais() {
     const usados = new Set(); LIBROS.forEach(b => Object.keys(b.enlaces).forEach(c => usados.add(c)));
     TAPA_BLANDA.forEach(c => usados.add(c)); usados.add(PAIS);
-    const ops = [...usados].map(c => [c, nombrePais(c, actual)]).sort((a, b) => a[1].localeCompare(b[1], actual));
+    const ops = [...usados].map(c => [c, nombrePais(c, UI)]).sort((a, b) => a[1].localeCompare(b[1], UI));
     return `<div class="pais"><label>🌍 ${esc(t('comprar_desde'))}
       <select id="pais">${ops.map(([c, n]) => `<option value="${c}"${c === PAIS ? ' selected' : ''}>${bandera(c)} ${esc(n)}</option>`).join('')}</select></label></div>`;
   }
@@ -245,14 +247,14 @@
     const e = enlaces(ed);
     const etq = [];
     if (ed.etiqueta) etq.push(`<span class="etq nuevo">${esc(ed.etiqueta)}</span>`);
-    if (!traducido) etq.push(`<span class="etq">${esc(t('edicion_en', { idioma: nombreIdioma(ed.idioma, L.codigo) }))}</span>`);
+    if (!traducido) etq.push(`<span class="etq">${esc(t('edicion_en', { idioma: nombreIdioma(ed.idioma, UI) }))}</span>`);
     const larga = (ed.descripcion || '').length > 260;
     let compra;
     if (e.principal) {
       compra = (e.enSuPais ? '' : `<p class="nota">${esc(t('no_en_tienda', { tienda: nombreTienda(TIENDAS[PAIS]) }))}</p>`) +
         `<a class="btn amz" href="${esc(urlSegura(e.url))}" target="_blank" rel="noopener">${esc(t('comprar', { tienda: nombreTienda(TIENDAS[e.principal]) }))}</a>` +
         (e.todas.length > 1 ? `<details><summary>${esc(t('otras_tiendas'))}</summary><div class="chips">${e.todas.map(c =>
-          `<a href="${esc(urlSegura(ed.enlaces[c]))}" target="_blank" rel="noopener" title="${esc(nombrePais(c, L.codigo))} · ${esc(nombreTienda(TIENDAS[c]))}"${c === e.principal ? ' class="on"' : ''}>${bandera(c)} ${etiquetaPais(c)}</a>`).join('')}</div></details>` : '');
+          `<a href="${esc(urlSegura(ed.enlaces[c]))}" target="_blank" rel="noopener" title="${esc(nombrePais(c, UI))} · ${esc(nombreTienda(TIENDAS[c]))}"${c === e.principal ? ' class="on"' : ''}>${bandera(c)} ${etiquetaPais(c)}</a>`).join('')}</div></details>` : '');
     } else compra = `<span class="prox">${esc(t('proximamente'))}</span>`;
     const otras = eds.filter(x => x !== ed && x.idioma !== ed.idioma && VISIBLES.some(i => i.codigo === x.idioma));
     const tambien = otras.length ? `<div class="tambien">${esc(t('tambien_en'))} ${otras.map(x => {
@@ -273,7 +275,8 @@
   }
 
   function cabecera() {
-    document.documentElement.lang = actual === 'colombia' ? 'es-CO' : actual;
+    document.documentElement.lang = actual === 'colombia' ? 'es-CO' : UI;
+    const sel = $('#idioma'); if (sel) { sel.value = UI; sel.disabled = actual === 'colombia'; }
     $('#titulo').textContent = t('titulo_sitio');
     $('#subtitulo').textContent = t('subtitulo_sitio'); $('#subtitulo').hidden = !t('subtitulo_sitio');
     $('#lema').textContent = t('lema');
@@ -289,7 +292,7 @@
 
   function pintarIdioma(L) {
     const items = librosPara(L);
-    $('#contenido').innerHTML = `<div class="cab"><h2>${esc(t('catalogo'))}</h2>${selectorPais()}</div>` + (items.length
+    $('#contenido').innerHTML = `<div class="cab"><h2>${esc(t('libros_en', { idioma: nombreIdioma(L.codigo, UI) }))}</h2>${selectorPais()}</div>` + (items.length
       ? `<div class="grid">${items.map(x => tarjeta(x, L)).join('')}</div>`
       : `<p class="vacio">${esc(t('sin_libros'))}</p>`);
   }
@@ -316,6 +319,7 @@
         <div class="acciones">
           ${url ? `<a class="btn grande" href="${esc(url)}" target="_blank" rel="noopener">${esc(t('colombia_boton'))}</a>`
                 : `<p class="nota">${esc(t('colombia_no_disponible'))}</p>`}
+          ${url ? `<a class="btn grande gr" href="${esc(url + (url.includes('?') ? '&' : '?') + 'seguimiento=1')}" target="_blank" rel="noopener">🔎 ${esc(t('colombia_seguimiento'))}</a>` : ''}
           ${wa ? `<a class="btn grande wa" href="https://wa.me/${wa}?text=${encodeURIComponent('Hola, quiero pedir un libro en Colombia.')}" target="_blank" rel="noopener">💬 ${esc(t('colombia_whatsapp'))}</a>` : ''}
         </div>
       </section>
@@ -342,16 +346,25 @@
   // ---------- Navegación ----------
   const valida = p => p === 'colombia' || VISIBLES.some(i => i.codigo === p);
 
+  // Idioma de los textos: el que eligió el visitante, o el de su navegador (entre los 6 idiomas).
+  function detectarUI() {
+    const ok = c => IDIOMAS.some(i => i.codigo === c);
+    try { const g = localStorage.getItem('idioma'); if (ok(g)) return g; } catch (e) { /* nada */ }
+    for (const l of (navigator.languages || [navigator.language || ''])) {
+      const x = String(l).toLowerCase();
+      if (ok(x)) return x;
+      if (ok(x.split('-')[0])) return x.split('-')[0];
+    }
+    return ok(C.IDIOMA_POR_DEFECTO) ? C.IDIOMA_POR_DEFECTO : IDIOMAS[0].codigo;
+  }
+
+  // Pestaña de libros al entrar: la del enlace, la última visitada, la del idioma del visitante, o inglés.
   function inicial() {
     const h = decodeURIComponent(location.hash.slice(1)).split('/')[0].toLowerCase();
     if (valida(h)) return h;
     try { const g = localStorage.getItem('pestana'); if (valida(g)) return g; } catch (e) { /* nada */ }
-    for (const l of (navigator.languages || [navigator.language || ''])) {
-      const x = String(l).toLowerCase();
-      const i = VISIBLES.find(i => i.codigo === x) || VISIBLES.find(i => i.codigo === x.split('-')[0]);
-      if (i) return i.codigo;
-    }
-    return valida(C.IDIOMA_POR_DEFECTO) ? C.IDIOMA_POR_DEFECTO : VISIBLES[0].codigo;
+    for (const c of [UI, 'en', C.IDIOMA_POR_DEFECTO]) if (valida(c) && c !== 'colombia') return c;
+    return VISIBLES[0].codigo;
   }
 
   function mostrar(p, libro) {
@@ -371,6 +384,13 @@
   }
 
   document.addEventListener('change', ev => {
+    if (ev.target.id === 'idioma') {
+      UI = ev.target.value;
+      try { localStorage.setItem('idioma', UI); } catch (e) { /* nada */ }
+      // Si hay libros escritos en ese idioma, mostramos esa pestaña; si no, se queda en la actual.
+      if (actual !== 'colombia' && valida(UI) && UI !== actual) { location.hash = UI; return; }
+      const y = window.scrollY; mostrar(actual); window.scrollTo(0, y); return;
+    }
     if (ev.target.id !== 'pais') return;
     PAIS = codigoPais(ev.target.value) || 'US';
     try { localStorage.setItem('pais', PAIS); } catch (e) { /* nada */ }
@@ -389,6 +409,8 @@
 
   cargar().then(() => {
     PAIS = detectarPais();
+    UI = detectarUI();
+    $('#idioma').innerHTML = IDIOMAS.map(i => `<option value="${esc(i.codigo)}" lang="${esc(i.codigo)}">${esc(i.nombre)}</option>`).join('');
     $('#pestanas').innerHTML = VISIBLES.map(i =>
       `<a href="#${esc(i.codigo)}" data-p="${esc(i.codigo)}" lang="${esc(i.codigo)}">${esc(i.nombre)}</a>`).join('') +
       `<a href="#colombia" data-p="colombia" class="col">🇨🇴 Colombia</a>`;
