@@ -1,0 +1,71 @@
+:root{--c:#1f4e79;--c2:#163a5b;--g:#f4f6f8;--t:#222;--suave:#5b6b7b;--ok:#15803d;--am:#ff9900}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP",Arial,sans-serif;margin:0;background:var(--g);color:var(--t);line-height:1.5}
+.top{background:var(--c);color:#fff;padding:22px 16px 18px;text-align:center}
+.top h1{margin:0;font-size:clamp(22px,5vw,32px)}
+.top p{margin:6px auto 0;max-width:640px;opacity:.92}
+
+/* Pestañas: se desplazan de lado en el celular */
+.pestanas{position:sticky;top:0;z-index:10;background:var(--c2);display:flex;gap:6px;overflow-x:auto;padding:8px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.pestanas::-webkit-scrollbar{display:none}
+.pestanas a{flex:0 0 auto;color:#fff;text-decoration:none;padding:8px 14px;border-radius:999px;font-size:15px;white-space:nowrap;background:#ffffff1a}
+.pestanas a.activa{background:#fff;color:var(--c2);font-weight:bold}
+.pestanas a.col{margin-left:auto;background:#fcd116;color:#003893;font-weight:bold}
+.pestanas a.col.activa{outline:3px solid #fff}
+
+.aviso{background:#fff7d6;border-bottom:1px solid #e9d27a;padding:10px 14px;text-align:center;font-size:15px}
+.aviso button{margin-left:8px}
+.aviso .x{background:none;color:var(--suave);font-size:18px;padding:0 6px}
+
+main{max-width:1000px;margin:auto;padding:16px}
+h2{color:var(--c);margin:10px 0 14px}
+.cargando,.vacio{text-align:center;color:var(--suave);padding:40px 0}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.card,.box{background:#fff;border-radius:12px;padding:14px;box-shadow:0 1px 4px #0002}
+.card{display:flex;flex-direction:column;scroll-margin-top:70px}
+.card.resalta{animation:resalta 1.6s ease}
+@keyframes resalta{0%,40%{box-shadow:0 0 0 4px var(--am)}100%{box-shadow:0 1px 4px #0002}}
+.portada{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;background:#dde3ea;display:flex;align-items:center;justify-content:center;color:#678;font-weight:bold;text-align:center;padding:10px}
+.card h3{margin:12px 0 2px;font-size:18px;line-height:1.25}
+.sub{color:var(--suave);font-size:14px;margin:0 0 2px}
+.autor{font-size:14px;margin:0 0 6px}
+.etiquetas{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.etq{font-size:12px;background:#e7eef6;color:var(--c);border-radius:999px;padding:2px 9px}
+.etq.nuevo{background:#fff1d6;color:#9a5b00}
+.desc{font-size:14px;color:#333}
+.desc p{margin:6px 0}
+.desc.corta{max-height:9.5em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 60%,transparent)}
+.mas{background:none;color:var(--c);padding:2px 0;font-size:14px;text-decoration:underline}
+.compra{margin-top:auto;padding-top:10px}
+.nota{font-size:13px;color:#9a5b00;margin:4px 0}
+.btn,button{background:var(--c);color:#fff;border:0;padding:11px 16px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block;font-size:15px;text-align:center}
+.btn.amz{background:var(--am);color:#111;font-weight:bold;width:100%}
+.btn.wa{background:#25d366}
+.btn.grande{font-size:17px;padding:14px 22px}
+.btn.gr{background:#666}
+.prox{display:block;text-align:center;background:#eef1f4;color:var(--suave);border-radius:8px;padding:10px}
+details{font-size:14px;margin-top:8px}
+details summary{cursor:pointer;color:var(--c)}
+details ul{margin:6px 0 0;padding-left:18px}
+.tambien{font-size:13px;margin-top:8px;color:var(--suave)}
+.tambien a{color:var(--c);margin-right:8px;white-space:nowrap}
+
+/* Colombia */
+.colombia{border-top:6px solid #fcd116}
+.colombia ol{padding-left:22px}
+.colombia ol li{margin:6px 0}
+.acciones{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+
+footer{text-align:center;color:var(--suave);font-size:13px;padding:24px 16px 40px}
+
+@media (max-width:520px){
+  main{padding:12px}
+  .grid{grid-template-columns:1fr 1fr;gap:10px}
+  .card{padding:10px}
+  .card h3{font-size:15px}
+  .desc{font-size:13px}
+  .btn{font-size:14px;padding:10px 8px}
+  .pestanas a.col{margin-left:0}
+}
+@media (max-width:340px){.grid{grid-template-columns:1fr}}

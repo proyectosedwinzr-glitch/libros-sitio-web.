@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es"><head><base target="_top"><meta charset="utf-8">
+<style>
+:root{--c:#1f4e79;--g:#f4f6f8}
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:var(--g);color:#222}
+header{background:var(--c);color:#fff;padding:18px;text-align:center}
+header a{color:#fff;font-size:14px}
+main{max-width:900px;margin:auto;padding:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.card,.box{background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 4px #0002}
+.card img,.ph{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px;background:#dde3ea;display:flex;align-items:center;justify-content:center;color:#678;font-weight:bold}
+button,.btn{background:var(--c);color:#fff;border:0;padding:10px 14px;border-radius:6px;cursor:pointer;text-decoration:none;display:inline-block;font-size:14px}
+button:disabled{opacity:.6;cursor:wait}
+.wa{background:#25d366}.gr{background:#666}
+label{display:block;margin:10px 0 3px;font-weight:bold;font-size:14px}
+input:not([type=radio]):not([type=checkbox]),select,textarea{width:100%;padding:9px;border:1px solid #bbb;border-radius:6px;font-size:15px}
+h2{color:var(--c)}.tot{font-size:20px;font-weight:bold;color:var(--c)}
+table{border-collapse:collapse;width:100%;font-size:13px;background:#fff}
+td,th{border:1px solid #ccc;padding:6px;vertical-align:top;text-align:left}
+.pend{color:#b45309;font-weight:bold}.act{color:#15803d;font-weight:bold}
+@media print{.no{display:none}header{display:none}}
+</style></head><body>
+<header><h1>📚 Libros bajo pedido</h1><div>Pides, pagas por Bre-B y nosotros compramos tu copia</div>
+  <div id="volver" style="display:none;margin-top:6px"><a target="_blank">← Ver todos mis libros</a></div></header>
+<main>
+
+<div id="tienda">
+  <h2>Catálogo</h2><div class="grid" id="cat">Cargando…</div>
+  <h2>Haz tu pedido</h2>
+  <form id="f" class="box">
+    <label>Libro</label><select id="libro" name="libroId" onchange="tot()"></select>
+    <label>Nombre completo *</label><input name="nombre" required>
+    <label>Cédula *</label><input name="cedula" required inputmode="numeric">
+    <label>Correo electrónico *</label><input name="email" type="email" required>
+    <label>Teléfono / WhatsApp *</label><input name="telefono" type="tel" required>
+    <label>Tipo de entrega *</label>
+    <label style="font-weight:normal"><input type="radio" name="entrega" value="Medellín" checked onchange="tot()"> Entrega en Medellín</label>
+    <label style="font-weight:normal"><input type="radio" name="entrega" value="Fuera de Medellín" onchange="tot()"> Fuera de Medellín (el envío te lo confirmo yo)</label>
+    <label>Ciudad / municipio *</label><input name="ciudad" required>
+    <label>Dirección *</label><input name="direccion" required>
+    <label>Barrio *</label><input name="barrio" required>
+    <label>Indicaciones adicionales</label><textarea name="indicaciones" rows="2"></textarea>
+    <div class="box" style="background:var(--g);margin-top:14px">
+      <b>Total a pagar:</b> <span class="tot" id="tot"></span>
+      <p>Paga por <b>Bre-B</b> a la llave <b id="llave"></b><br>Titular: <b id="titular"></b></p>
+      <a class="btn wa" id="wa" target="_blank">💬 Escribir por WhatsApp</a>
+    </div>
+    <label>Comprobante de pago (imagen o PDF, máx. 5 MB) *</label>
+    <input type="file" id="comp" accept="image/*,.pdf" required>
+    <p><button id="envia">Enviar pedido</button></p>
+  </form>
+  <div id="ok" class="box" style="display:none"></div>
+</div>
+
+<div id="admin" style="display:none">
+  <h2>Panel de pedidos</h2>
+  <div id="login" class="box no"><label>Contraseña</label><input type="password" id="pw" onkeydown="if(event.key==='Enter')entrar()"><p><button id="bentrar" onclick="entrar()">Entrar</button></p></div>
+  <div id="panel" style="display:none">
+    <p class="no"><button onclick="csv()">⬇ Exportar a Excel (CSV)</button> <button class="gr" onclick="print()">🖨 Imprimir</button> <button class="gr" onclick="cargar()">↻ Actualizar</button> <button class="gr" onclick="cerrar()">Salir</button></p>
+    <div style="overflow-x:auto"><table id="tb"></table></div>
+  </div>
+</div>
+
+</main>
+<script>
+const ADMIN = <?= admin ?>;
+const LIBRO = '<?!= libro ?>';   // libro preseleccionado desde el sitio público (?libro=ID)
+let D, R = [], TK = '';
+const $ = s => document.querySelector(s);
+const money = n => '$' + Number(n).toLocaleString('es-CO');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+if (ADMIN) {
+  $('#tienda').style.display = 'none'; $('#admin').style.display = 'block';
+  try { TK = sessionStorage.getItem('tk') || ''; } catch (e) {}
+  if (TK) cargar();
+}
+else google.script.run.withSuccessHandler(d => { D = d; pintar(); }).datosInicio();
+
+function pintar() {
+  $('#cat').innerHTML = D.libros.map(l => `<div class="card">
+    ${l.portada ? `<img src="${esc(l.portada)}" alt="">` : '<div class="ph">PORTADA AQUÍ</div>'}
+    <h3>${esc(l.titulo)}</h3><div>${esc(l.autor)}</div><p class="tot">${money(l.precio)}</p>
+    <button onclick="elegir('${esc(l.id)}')">Pedir</button>
+    <a class="btn gr" href="${esc(l.amazon)}" target="_blank">Ver en Amazon</a></div>`).join('');
+  $('#libro').innerHTML = D.libros.map(l => `<option value="${esc(l.id)}">${esc(l.titulo)} — ${money(l.precio)}</option>`).join('');
+  $('#llave').textContent = D.breb.llave; $('#titular').textContent = D.breb.titular;
+  if (D.sitio) { $('#volver').style.display = 'block'; $('#volver a').href = D.sitio; }
+  if (LIBRO && D.libros.some(l => String(l.id) === LIBRO)) { $('#libro').value = LIBRO; setTimeout(() => $('#f').scrollIntoView({behavior:'smooth'}), 300); }
+  tot();
+}
+function elegir(id) { $('#libro').value = id; tot(); $('#f').scrollIntoView({behavior:'smooth'}); }
+function tot() {
+  const l = D.libros.find(x => x.id == $('#libro').value); if (!l) return;
+  const med = document.querySelector('[name=entrega]:checked').value === 'Medellín';
+  const t = med ? money(Number(l.precio) + D.envioMed) + ' (incluye envío ' + money(D.envioMed) + ')'
+                : money(l.precio) + ' + envío por confirmar';
+  $('#tot').textContent = t;
+  $('#wa').href = 'https://wa.me/' + D.whatsapp + '?text=' + encodeURIComponent('Hola, quiero pedir "' + l.titulo + '". Total: ' + t);
+}
+
+$('#f').onsubmit = e => {
+  e.preventDefault();
+  if ($('#envia').disabled) return;              // evita doble clic
+  const file = $('#comp').files[0];
+  if (!file || file.size > 5e6) return alert('Adjunta un comprobante de máximo 5 MB.');
+  const d = Object.fromEntries(new FormData($('#f')));
+  $('#envia').disabled = true; $('#envia').textContent = 'Enviando…';
+  const r = new FileReader();
+  r.onload = () => google.script.run
+    .withSuccessHandler(res => {
+      const id = res && res.id ? res.id : res;
+      $('#f').style.display = 'none'; $('#ok').style.display = 'block';
+      $('#ok').innerHTML = res && res.repetido
+        ? `<h2>ℹ️ Ya teníamos tu pedido</h2><p>Hace poco recibimos un pedido igual. Su número es <b>${esc(id)}</b>, no hace falta enviarlo otra vez. Te confirmo por WhatsApp.</p>`
+        : `<h2>✅ ¡Pedido recibido!</h2><p>Número: <b>${esc(id)}</b>. Quedó <b>pendiente de activación</b>: revisaré tu pago y te confirmo por WhatsApp.</p>`;
+      $('#ok').scrollIntoView({behavior:'smooth'});
+    })
+    .withFailureHandler(er => { alert(er.message); $('#envia').disabled = false; $('#envia').textContent = 'Enviar pedido'; })
+    .crearPedido(d, { name: file.name, type: file.type, data: r.result.split(',')[1] });
+  r.readAsDataURL(file);
+};
+
+// ---- Panel ----
+function guardarTK(t) { TK = t; try { t ? sessionStorage.setItem('tk', t) : sessionStorage.removeItem('tk'); } catch (e) {} }
+function fallo(e) {
+  if (String(e.message).indexOf('SESION:') === 0) {
+    guardarTK(''); $('#panel').style.display = 'none'; $('#login').style.display = 'block';
+    alert(e.message.replace('SESION: ', ''));
+  } else alert(e.message);
+}
+function entrar() {
+  $('#bentrar').disabled = true;
+  google.script.run
+    .withSuccessHandler(t => { $('#bentrar').disabled = false; $('#pw').value = ''; guardarTK(t); cargar(); })
+    .withFailureHandler(e => { $('#bentrar').disabled = false; alert(e.message); })
+    .entrar($('#pw').value);
+}
+function cerrar() { google.script.run.salir(TK); guardarTK(''); R = []; $('#tb').innerHTML = ''; $('#panel').style.display = 'none'; $('#login').style.display = 'block'; }
+function cargar() {
+  google.script.run.withSuccessHandler(r => {
+    R = r; $('#login').style.display = 'none'; $('#panel').style.display = 'block'; tabla();
+  }).withFailureHandler(fallo).listar(TK);
+}
+function tabla() {
+  $('#tb').innerHTML = '<tr><th>Estado</th><th>Pedido</th><th>Cliente</th><th>Entrega</th><th>Total</th><th>Envío</th><th>Verificada</th><th>Pago</th></tr>' +
+  R.map(r => { const a = r['Estado'] === 'Activo'; return `<tr>
+    <td class="${a ? 'act' : 'pend'}">${esc(r['Estado'])}<br>${a ? '' : `<button class="no" onclick="set('${esc(r.ID)}','Estado','Activo')">Activar</button>`}</td>
+    <td>${esc(r.ID)}<br>${esc(r['Fecha'])}<br><b>${esc(r['Libro'])}</b></td>
+    <td>${esc(r['Nombre'])}<br>CC ${esc(r['Cédula'])}<br>${esc(r['Teléfono'])}<br>${esc(r['Email'])}</td>
+    <td>${esc(r['Entrega'])}<br>${esc(r['Dirección'])}, ${esc(r['Barrio'])}<br>${esc(r['Ciudad'])}<br><i>${esc(r['Indicaciones'])}</i></td>
+    <td>${money(r['Total'])}</td>
+    <td><input style="width:80px" value="${esc(r['Envío'])}" onchange="set('${esc(r.ID)}','Envío',this.value)"></td>
+    <td><input type="checkbox" ${r['Verificada'] === true ? 'checked' : ''} onchange="set('${esc(r.ID)}','Verificada',this.checked)"></td>
+    <td><a class="no" href="${esc(r['Comprobante'])}" target="_blank">Ver</a></td></tr>`; }).join('');
+}
+function set(id, campo, val) {
+  google.script.run.withSuccessHandler(cargar).withFailureHandler(fallo).actualizar(TK, id, campo, val);
+}
+function csv() {
+  const c = Object.keys(R[0] || {});
+  const celda = x => { let s = String(x ?? ''); if (/^[=@]|^[+\-](?!\d)/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+  const t = [c, ...R.map(r => c.map(k => r[k]))].map(a => a.map(celda).join(';')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + t], { type: 'text/csv' }));
+  a.download = 'pedidos.csv'; a.click();
+}
+</script></body></html>
