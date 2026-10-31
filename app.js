@@ -19,7 +19,7 @@
     sin_libros: 'Pronto habrá libros aquí.', pie: '© {anio} {autor}',
     colombia_titulo: 'Pedidos en Colombia', colombia_boton: 'Hacer mi pedido', colombia_pedir: 'Pedir en Colombia',
     colombia_whatsapp: 'Escribir por WhatsApp', colombia_no_disponible: 'El formulario de pedidos estará disponible muy pronto.',
-    aviso_colombia: '¿Estás en Colombia? Pide tu libro aquí y paga por Bre-B.', aviso_colombia_boton: 'Ir a Colombia'
+    aviso_colombia: '¿Estás en Colombia? Pide aquí tus libros y paga por Bre-B.', colombia_seguimiento: 'Consultar mi pedido', aviso_colombia_boton: 'Ir a Colombia'
   };
 
   DEF.comprar_desde = 'Compro desde:';
@@ -316,6 +316,7 @@
         <div class="acciones">
           ${url ? `<a class="btn grande" href="${esc(url)}" target="_blank" rel="noopener">${esc(t('colombia_boton'))}</a>`
                 : `<p class="nota">${esc(t('colombia_no_disponible'))}</p>`}
+          ${url ? `<a class="btn grande gr" href="${esc(url + (url.includes('?') ? '&' : '?') + 'seguimiento=1')}" target="_blank" rel="noopener">🔎 ${esc(t('colombia_seguimiento'))}</a>` : ''}
           ${wa ? `<a class="btn grande wa" href="https://wa.me/${wa}?text=${encodeURIComponent('Hola, quiero pedir un libro en Colombia.')}" target="_blank" rel="noopener">💬 ${esc(t('colombia_whatsapp'))}</a>` : ''}
         </div>
       </section>
