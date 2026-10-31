@@ -152,8 +152,16 @@
     if (m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w800';
     return urlSegura(u);
   }
+  // Convierte el texto en párrafos; las líneas que empiezan con •, * o - se muestran como lista.
   function parrafos(s) {
-    return String(s || '').split(/\n+/).map(p => p.trim()).filter(Boolean).map(p => '<p>' + esc(p) + '</p>').join('');
+    let html = '', enLista = false;
+    String(s || '').split(/\n+/).map(p => p.trim()).filter(Boolean).forEach(p => {
+      const m = p.match(/^[•*\-–]\s*(.*)$/);
+      if (m && !enLista) { html += '<ul>'; enLista = true; }
+      if (!m && enLista) { html += '</ul>'; enLista = false; }
+      html += m ? '<li>' + esc(m[1]) + '</li>' : '<p>' + esc(p) + '</p>';
+    });
+    return html + (enLista ? '</ul>' : '');
   }
 
   // ---------- Qué libro y qué enlace mostrar en cada idioma ----------

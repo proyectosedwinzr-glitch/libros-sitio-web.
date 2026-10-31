@@ -27,6 +27,7 @@ h2{color:var(--c);margin:10px 0 14px}
 .card.resalta{animation:resalta 1.6s ease}
 @keyframes resalta{0%,40%{box-shadow:0 0 0 4px var(--am)}100%{box-shadow:0 1px 4px #0002}}
 .portada{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;background:#dde3ea;display:flex;align-items:center;justify-content:center;color:#678;font-weight:bold;text-align:center;padding:10px}
+img.portada{padding:0;background:none;box-shadow:0 2px 8px #0003}
 .card h3{margin:12px 0 2px;font-size:18px;line-height:1.25}
 .sub{color:var(--suave);font-size:14px;margin:0 0 2px}
 .autor{font-size:14px;margin:0 0 6px}
@@ -35,6 +36,8 @@ h2{color:var(--c);margin:10px 0 14px}
 .etq.nuevo{background:#fff1d6;color:#9a5b00}
 .desc{font-size:14px;color:#333}
 .desc p{margin:6px 0}
+.desc ul{margin:4px 0;padding-left:18px}
+.desc li{margin:3px 0}
 .desc.corta{max-height:9.5em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 60%,transparent)}
 .mas{background:none;color:var(--c);padding:2px 0;font-size:14px;text-decoration:underline}
 .compra{margin-top:auto;padding-top:10px}
@@ -61,14 +64,10 @@ footer{text-align:center;color:var(--suave);font-size:13px;padding:24px 16px 40p
 
 @media (max-width:520px){
   main{padding:12px}
-  .grid{grid-template-columns:1fr 1fr;gap:10px}
-  .card{padding:10px}
-  .card h3{font-size:15px}
-  .desc{font-size:13px}
-  .btn{font-size:14px;padding:10px 8px}
+  .grid{grid-template-columns:1fr;gap:14px}
+  .card .portada{max-width:230px;margin:0 auto}
   .pestanas a.col{margin-left:0}
 }
-@media (max-width:340px){.grid{grid-template-columns:1fr}}
 
 /* Selector de país y tiendas */
 .cab{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
