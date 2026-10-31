@@ -1,3 +1,82 @@
-Grupo,Idioma,Título,Subtítulo,Autor,Descripción,Portada,Etiqueta,Orden,Visible,ID Colombia,amazon.com,amazon.com.mx,amazon.es,amazon.co.uk,amazon.ca,amazon.co.jp,amazon.fr,amazon.de,amazon.it
-libro-1,es,Letras con historia,,Tu nombre de autor,"Aquí va la descripción del libro en español (cópiala de tu página de Amazon).",,,1,sí,1,https://www.amazon.com/dp/B0HN1D6ZG4,,,,,,,,
-libro-1,en,TÍTULO EN INGLÉS,,Tu nombre de autor,"Book description in English (copy it from your Amazon page).",,,1,no,,https://www.amazon.com/dp/XXXXXXXXXX,,,,,,,,
+Grupo,Idioma,Título,Subtítulo,Autor,Descripción,Portada,ASIN,Tiendas,Etiqueta,Orden,Visible,ID Colombia
+letras-con-historia,es,Letras con historia,Sopas de letras para adultos con historias reales y mensajes ocultos,Edwin Zar,"Cada historia esconde un final y en la cuadrícula son las palabras restantes quienes te lo cuentan: un bulbo de tulipán que llegó a valer una casa junto a un canal. Un estafador que vende la Torre Eiffel… y repite la jugada. Una maestra que baja las cataratas del Niágara dentro de un barril. Todas las historias de este libro son reales, y algunas desmontan un mito, como el de la Gran Muralla que se ve desde el espacio.
+Letras con historia es más que un libro de sopas de letras: encontrarás curiosidades de la historia universal, frases a completar y a buscar en la cuadrícula, alfabeto pictográfico y un espacio para crear y compartir. Cada cuadrícula acompaña un relato breve y real:
+• Lees el relato y completas una frase que te damos a medio escribir.
+• Buscas en la cuadrícula las palabras de la lista y después esa frase, que no va en línea recta: su recorrido dibuja una figura (en los niveles 1 y 2 te damos un trazo aproximado).
+• Las letras que sobran, leídas bajando por columnas, forman un mensaje: el final que el relato no te contó.
+En este libro tienes:
+• 48 historias reales en tres partes: Curiosidades que parecen inventadas, Impuestos y naufragios, y Lo que los mapas no decían.
+• Tres niveles: Aprendiz, Investigador y Experto. En el último no hay lista de palabras: las deduces a partir de sinónimos y antónimos, con tres letras de ayuda en cada una.
+• Un relato final en ocho capítulos, «La piedra que hablaba», sobre cómo se volvieron a leer los jeroglíficos: cada cuadrícula esconde un trozo del mensaje.
+• Bonus: el alfabeto pictográfico. Cuatro listas cifradas, con la clave en el libro.
+• Tres páginas para crear tus propias sopas de letras y esconder tus mensajes.
+• Un modo de empleo con un ejemplo resuelto paso a paso.
+• Todas las soluciones, con el recorrido de cada frase trazado y las palabras del nivel 3 y de las listas cifradas.
+Formato 15,24 × 22,86 cm, 160 páginas, interior en blanco y negro sobre papel crema. Para quien disfruta de las sopas de letras y de aprender algo mientras juega. Aprendes, recuerdas, compartes, ejercitas tu mente y te diviertes.",portadas/letras-con-historia-es.jpg,B0HN1D6ZG4,,,1,sí,1
+letras-con-historia,en,Every Letter Tells a Story,Word Search Puzzles for Adults with True Stories and Hidden Messages,Edwin Zar,"Each story hides an untold ending.
+A candy bar that melts in an engineer’s pocket. A dog who sniffs out a stolen World Cup trophy wrapped in newspaper. A spacecraft lost because two teams used different units. Every story in this book is true, and some of them overturn a myth, like the line Sherlock Holmes never said.
+Every Letter Tells a Story is a different kind of word search book for adults. Each grid comes with a short true story:
+• You read the story and complete a phrase we give you half written.
+• You find the words on the list in the grid, and then that phrase, which does not run in a straight line: its path draws a shape.
+• The letters left over, read down the columns, spell a message: the ending the story did not tell you.
+Inside this book:
+• 48 true stories from art, music, science, technology, literature, film and sport, in three parts.
+• Three levels: Apprentice, Sleuth and Expert. At the last one the list disappears: you work out the words from synonyms and antonyms, with three letters given for each.
+• A final story in eight chapters about the Voyager Golden Record, “A Golden Record for the Stars”: each grid hides a piece of the message.
+• Four word lists in code, with the key in the book.
+• Three pages to make your own grids and hide your own messages.
+• A how-to section with a solved example, step by step.
+• All the solutions, with the path of every phrase traced and the words for level 3 and the coded lists.
+6 × 9 in, 160 pages, black-and-white interior on cream paper. For anyone who enjoys word searches and likes to learn something while they play.",portadas/every-letter-tells-a-story-en.jpg,B0HNT1H7HD,,,1,sí,
+letras-con-historia,fr,Lettres et histoires,Mots mêlés pour adultes : histoires vraies et messages cachés,Edwin Zar,"Chaque histoire cache une fin que le récit ne raconte pas.
+Une girafe qui traverse la France à pied jusqu’à Paris. Un tableau devenu célèbre en disparaissant du Louvre. Une soirée de 1913 où l’on n’entendait plus l’orchestre sous les sifflets. Toutes les histoires de ce livre sont vraies, et certaines démentent une idée reçue.
+Lettres et histoires propose des mots mêlés pour adultes d’un genre un peu différent. Chaque grille accompagne un court récit vrai :
+• Vous lisez le récit et vous complétez une phrase que nous vous donnons en partie écrite.
+• Vous cherchez dans la grille les mots de la liste, puis cette phrase, qui ne va pas en ligne droite : son parcours dessine une figure.
+• Les lettres qui restent, lues en descendant par colonnes, forment un message : la fin que le récit ne vous a pas racontée.
+Dans ce livre :
+• 48 histoires vraies (art, musique, inventions, savoir-faire d’ici et d’ailleurs) en trois parties.
+• Trois niveaux : Apprenti, Enquêteur et Expert. Au dernier, la liste disparaît : vous déduisez les mots à partir de synonymes et d’antonymes, avec trois lettres d’aide pour chacun.
+• Un récit final en huit chapitres sur la découverte de Lascaux, « La grotte qu’il fallut refermer » : chaque grille en cache un morceau.
+• Quatre listes chiffrées, dont la clé est dans le livre.
+• Trois pages pour créer vos propres grilles et y cacher vos messages.
+• Un mode d’emploi avec un exemple résolu pas à pas.
+• Toutes les solutions, avec le parcours de chaque phrase tracé, et les mots du niveau 3 et des listes chiffrées.
+Format 15,24 × 22,86 cm, 160 pages, intérieur en noir et blanc sur papier crème. Pour celles et ceux qui aiment les mots mêlés et qui aiment aussi apprendre quelque chose en jouant.",portadas/lettres-et-histoires-fr.jpg,B0HNJ5T1DH,,,1,sí,
+letras-con-historia,it,Lettere e storie,Parole intrecciate per adulti con storie vere e messaggi nascosti,Edwin Zar,"Ogni storia nasconde un finale che il racconto non dice.
+Una crema spalmabile nata quando il cacao era razionato. Un bambino di terza elementare che inventa la parola «petaloso» e riceve una risposta dall’Accademia della Crusca. Un ponte sul Canal Grande progettato da un architetto di nome Antonio da Ponte. Tutte le storie di questo libro sono vere, e alcune smontano una leggenda, come la pasta che Marco Polo non portò dalla Cina.
+Lettere e storie è un libro di parole intrecciate diverso dagli altri. Ogni griglia arriva con una breve storia vera:
+• Leggi il racconto e completi una frase che ti diamo scritta a metà.
+• Trovi nella griglia le parole dell’elenco e poi quella frase, che non va in linea retta: il suo percorso disegna una figura.
+• Le lettere che avanzano, lette scendendo per colonne, formano un messaggio: il finale che il racconto non ti ha detto.
+Nel libro:
+• 48 storie vere di arte, musica, scienza, tecnica, letteratura, cucina e sport, in tre parti.
+• Tre livelli: Apprendista, Segugio e Virtuoso. All’ultimo l’elenco sparisce: deduci le parole da sinonimi e contrari, con tre lettere date per ognuna.
+• Un racconto finale in otto capitoli, «I quaderni di Leonardo», sul viaggio dei suoi manoscritti dopo la sua morte: ogni griglia nasconde un pezzo del messaggio.
+• Quattro elenchi cifrati, con la chiave nel libro.
+• Tre pagine per creare le tue griglie e nascondere i tuoi messaggi.
+• Un modo d’uso con un esempio risolto, passo dopo passo.
+• Tutte le soluzioni, con il percorso di ogni frase e le parole del livello 3 e degli elenchi cifrati.
+Formato 15,24 × 22,86 cm, 160 pagine, interno in bianco e nero su carta color crema. Per chi ama le parole intrecciate e vuole imparare qualcosa mentre gioca.",portadas/lettere-e-storie-it.jpg,B0HPMN83M7,,,1,sí,
+cuaderno-memoria,es,Si no lo escribo se me olvida,Cuaderno para todo lo que mi memoria no guarda,Memini Zar,"¿Entraste a una habitación y olvidaste a qué ibas? Bienvenido al club.
+Si no lo escribo, se me olvida es el cuaderno para todo lo que tu memoria decidió no guardar: recados, citas, ideas, listas y ese «lo que iba a decir era…».
+Qué encontrarás dentro:
+• Recuadro de prioridades «Lo que no se me puede olvidar» en la parte superior de varias páginas, con casillas para marcar.
+• Páginas que se alternan: renglón ancho, renglón punteado, listas de pendientes con casillas y notas sueltas.
+• Fecha y día de la semana para encerrar en un círculo.
+• Secciones prácticas: «Dónde dejé…» (gafas, llaves, carro, control remoto…), «Fechas que no puedo olvidar» y «Contactos importantes».
+• Una frase divertida al pie de cada página.
+Detalles: 110 páginas · 6 × 9 pulgadas (15,2 × 22,9 cm), cabe en el bolso o la mochila · papel crema · tapa blanda mate.
+Un regalo con humor para mamá, papá, los abuelos, un compañero que se jubila, el amigo secreto de la oficina o un cumpleaños de 40, 50, 60 o 70 años… o para ti, si te acuerdas de comprarlo.
+Verba volant, scripta manent: las palabras vuelan, lo escrito permanece.",portadas/si-no-lo-escribo-se-me-olvida-es.jpg,B0HPJT9K6J,,,2,sí,
+cuaderno-memoria,en,Write It Down Before I Forget,A Notebook for everything my memory won't keep,Memini Zar,"Ever walked into a room and forgotten why? Welcome to the club.
+Write It Down Before I Forget is the notebook for everything your memory decided not to keep: errands, appointments, ideas, lists and that ""what I was going to say was…"".
+What's inside:
+• An ""I Must Not Forget"" priority box at the top of many pages, with checkboxes to tick off.
+• Alternating page layouts: wide-ruled lines, dotted lines, to-do lists with checkboxes and pages for loose notes.
+• Date and day of the week to circle on every page.
+• Handy sections: ""Where Did I Leave…"" (glasses, keys, the car, the remote…), ""Dates I Can't Forget"" and ""Important Contacts"".
+• A different funny line at the bottom of every page.
+Details: 110 pages · 6 x 9 inches, fits in a purse or backpack · cream paper · matte softcover.
+A gift that makes them laugh for Mom, Dad, Grandma and Grandpa, a coworker who's retiring, the office gift exchange or a 50th, 60th or 70th birthday… or for yourself, if you remember to buy it.
+Verba volant, scripta manent: spoken words fly away, written words remain.",portadas/write-it-down-before-i-forget-en.jpg,B0HN82W4WP,,,2,sí,

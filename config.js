@@ -3,7 +3,7 @@
 // =====================================================================
 window.CONFIG = {
   // Tu nombre como autor. Aparece en el título y en el pie de página.
-  AUTOR: 'Tu nombre de autor',
+  AUTOR: 'Edwin Zar',
 
   // Enlace (o solo el ID) de la hoja de Google Sheets PÚBLICA del catálogo.
   // Ejemplo: 'https://docs.google.com/spreadsheets/d/1AbC...xyz/edit'
@@ -18,5 +18,8 @@ window.CONFIG = {
   WHATSAPP: '',
 
   // Pestaña que se abre si no se puede detectar el idioma del visitante.
-  IDIOMA_POR_DEFECTO: 'es'
+  IDIOMA_POR_DEFECTO: 'es',
+
+  // false = solo aparecen las pestañas de idiomas que ya tienen libros. true = aparecen todas.
+  MOSTRAR_PESTANAS_VACIAS: false
 };

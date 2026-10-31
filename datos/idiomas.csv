@@ -1,7 +1,7 @@
-Código,Nombre,Tienda principal,Tiendas de respaldo,Mostrar libros de,Activo
-es,Español,amazon.com,"amazon.com.mx, amazon.es",en,sí
-en,English,amazon.com,"amazon.co.uk, amazon.ca",es,sí
-ja,日本語,amazon.co.jp,amazon.com,"en, es",sí
-fr,Français,amazon.fr,amazon.com,"en, es",sí
-de,Deutsch,amazon.de,amazon.com,"en, es",sí
-it,Italiano,amazon.it,amazon.com,"en, es",sí
+Código,Nombre,Mostrar libros de,Activo
+es,Español,,sí
+en,English,,sí
+ja,日本語,,sí
+fr,Français,,sí
+de,Deutsch,,sí
+it,Italiano,,sí
