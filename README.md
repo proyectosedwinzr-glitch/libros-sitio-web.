@@ -17,7 +17,8 @@ El sitio tiene **dos partes**:
 Crea una hoja con **3 pestañas** con estos nombres exactos (puedes importar los archivos de la carpeta `datos/` con *Archivo → Importar → Subir → "Insertar hojas nuevas"* y luego renombrarlas):
 
 ### Cómo funciona el sitio
-- **Las pestañas son el idioma en que está escrito el libro** (Español, English, 日本語…). Solo aparecen las pestañas de idiomas que ya tienen libros.
+- **🌐 Idioma del sitio** (arriba): el visitante elige entre los 6 idiomas (Español, English, 日本語, Français, Deutsch, Italiano). Cambia todos los textos. Se detecta solo según el navegador y se recuerda.
+- **Las pestañas son el idioma en que está escrito el libro** (Español, English, Français…). Solo aparecen las pestañas de idiomas que ya tienen libros. Un visitante puede leer el sitio en alemán y ver los libros en inglés ("Bücher auf Englisch").
 - **El visitante elige desde qué país compra** ("Compro desde: 🇩🇪 Alemania"). El sitio lo adivina por el navegador y lo recuerda. El botón principal lleva a la tienda Amazon de ese país.
 - Cada libro tiene además **"Otras tiendas Amazon"**, con las 14 tiendas que muestra KDP en "Ver en Amazon": US, UK, DE, FR, ES, IT, NL, PL, SE, BE, IE, JP, CA, AU.
 

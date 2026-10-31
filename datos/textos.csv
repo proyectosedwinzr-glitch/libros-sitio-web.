@@ -3,6 +3,7 @@ titulo_sitio,Libros de {autor},Books by {autor},{autor}の本,Livres d’{autor}
 subtitulo_sitio,Cuadernos de Memini Zar,Notebooks by Memini Zar,Memini Zarのノート,Carnets de Memini Zar,Notizbücher von Memini Zar,Quaderni di Memini Zar
 lema,Descubre nuestros libros y consíguelos en la tienda Amazon de tu país.,Discover our books and get them from your country's Amazon store.,私たちの本をご紹介します。お住まいの国のAmazonでお求めいただけます。,Découvrez nos livres et procurez-les sur l'Amazon de votre pays.,Entdecken Sie unsere Bücher und kaufen Sie sie bei Amazon in Ihrem Land.,Scopri i nostri libri e acquistali sull'Amazon del tuo paese.
 catalogo,Catálogo,Catalog,作品一覧,Catalogue,Katalog,Catalogo
+libros_en,Libros en {idioma},Books in {idioma},{idioma}の本,Livres en {idioma},Bücher auf {idioma},Libri in {idioma}
 comprar_desde,Compro desde:,I'm shopping from:,購入する国：,J'achète depuis :,Ich kaufe aus:,Acquisto da:
 comprar,Comprar en {tienda},Buy on {tienda},{tienda}で購入,Acheter sur {tienda},Bei {tienda} kaufen,Acquista su {tienda}
 no_en_tienda,Aún no está en {tienda}.,Not yet available on {tienda}.,{tienda}ではまだお取り扱いがありません。,Pas encore disponible sur {tienda}.,Noch nicht bei {tienda} erhältlich.,Non ancora disponibile su {tienda}.
