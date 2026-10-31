@@ -119,7 +119,8 @@
     LIBROS = cat.filter(b => b.titulo && siNo(b.visible, true)).map((b, n) => ({
       ...b, n, idioma: codigoDe(b.idioma), grupo: b.grupo || ('_fila' + n),
       orden: isNaN(parseFloat(b.orden)) ? 9999 : parseFloat(b.orden),
-      enlaces: enlacesLibro(b)
+      enlaces: enlacesLibro(b),
+      asinLimpio: (String(b.asin || '').match(/([A-Z0-9]{10})(?![A-Z0-9])/i) || [])[1] || ''
     }));
     // Solo se muestran las pestañas de idiomas que tienen libros (salvo que config.js diga lo contrario).
     VISIBLES = C.MOSTRAR_PESTANAS_VACIAS ? IDIOMAS : IDIOMAS.filter(L => librosPara(L).length);
@@ -293,13 +294,20 @@
       : `<p class="vacio">${esc(t('sin_libros'))}</p>`);
   }
 
+  // Pestaña Colombia: muestra TODOS los libros (de todos los idiomas) con el botón "Pedir en Colombia".
+  // El libro se identifica en la app de pedidos por su ASIN (o por "ID Colombia" si lo llenas).
   function pintarColombia() {
     const url = urlSegura(C.URL_COLOMBIA);
+    const wa = String(C.WHATSAPP || '').replace(/\D/g, '');
     const pasos = t('colombia_pasos').split(/\n+/).map(s => s.trim()).filter(Boolean);
-    const L = IDIOMAS.find(i => i.codigo === 'es') || IDIOMAS[0];
-    const items = librosPara(L).filter(x => x.ed.id_colombia || x.eds.some(e => e.id_colombia));
-    const conId = x => x.ed.id_colombia || (x.eds.find(e => e.id_colombia) || {}).id_colombia;
+    const items = LIBROS.slice().sort((a, b) => a.orden - b.orden || a.n - b.n);
     const pedido = id => url + (url.includes('?') ? '&' : '?') + 'libro=' + encodeURIComponent(id);
+    const boton = ed => {
+      const id = ed.id_colombia || ed.asinLimpio;
+      if (url && id) return `<a class="btn" style="width:100%" href="${esc(pedido(id))}" target="_blank" rel="noopener">${esc(t('colombia_pedir'))}</a>`;
+      if (wa) return `<a class="btn wa" style="width:100%" href="https://wa.me/${wa}?text=${encodeURIComponent('Hola, quiero pedir en Colombia el libro "' + ed.titulo + '".')}" target="_blank" rel="noopener">💬 ${esc(t('colombia_pedir'))}</a>`;
+      return `<span class="prox">${esc(t('proximamente'))}</span>`;
+    };
     $('#contenido').innerHTML = `
       <section class="box colombia">
         <h2>🇨🇴 ${esc(t('colombia_titulo'))}</h2>
@@ -308,14 +316,16 @@
         <div class="acciones">
           ${url ? `<a class="btn grande" href="${esc(url)}" target="_blank" rel="noopener">${esc(t('colombia_boton'))}</a>`
                 : `<p class="nota">${esc(t('colombia_no_disponible'))}</p>`}
-          ${C.WHATSAPP ? `<a class="btn grande wa" href="https://wa.me/${esc(String(C.WHATSAPP).replace(/\D/g, ''))}?text=${encodeURIComponent('Hola, quiero pedir un libro en Colombia.')}" target="_blank" rel="noopener">💬 ${esc(t('colombia_whatsapp'))}</a>` : ''}
+          ${wa ? `<a class="btn grande wa" href="https://wa.me/${wa}?text=${encodeURIComponent('Hola, quiero pedir un libro en Colombia.')}" target="_blank" rel="noopener">💬 ${esc(t('colombia_whatsapp'))}</a>` : ''}
         </div>
       </section>
-      ${items.length ? `<h2>${esc(t('catalogo'))}</h2><div class="grid">${items.map(x => `
-        <article class="card" lang="${esc(x.ed.idioma)}">
-          ${portadaHTML(x.ed)}<h3>${esc(x.ed.titulo)}</h3>
-          ${x.ed.autor ? `<p class="autor">${esc(x.ed.autor)}</p>` : ''}
-          <div class="compra">${url ? `<a class="btn" style="width:100%" href="${esc(pedido(conId(x)))}" target="_blank" rel="noopener">${esc(t('colombia_pedir'))}</a>` : ''}</div>
+      ${items.length ? `<h2>${esc(t('catalogo'))}</h2><div class="grid">${items.map(ed => `
+        <article class="card" lang="${esc(ed.idioma)}">
+          ${portadaHTML(ed)}<h3>${esc(ed.titulo)}</h3>
+          ${ed.subtitulo ? `<p class="sub">${esc(ed.subtitulo)}</p>` : ''}
+          ${ed.autor ? `<p class="autor">${esc(ed.autor)}</p>` : ''}
+          <div class="etiquetas"><span class="etq">${esc(t('edicion_en', { idioma: nombreIdioma(ed.idioma, 'es') }, 'es'))}</span></div>
+          <div class="compra">${boton(ed)}</div>
         </article>`).join('')}</div>` : ''}`;
   }
 
