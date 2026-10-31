@@ -12,10 +12,10 @@ window.CONFIG = {
   GOOGLE_SHEET: '',
 
   // URL de tu aplicación de Apps Script para Colombia (la que termina en /exec).
-  URL_COLOMBIA: '',
+  URL_COLOMBIA: 'https://script.google.com/macros/s/AKfycbxQk3uZBOKCTLp0_ttCM9f5eb-_l0XVYucNbjB3XUEijzuzthAJA0DtGK2CvGszegHzsQ/exec',
 
   // Tu WhatsApp para la pestaña Colombia: 57 + número, sin + ni espacios. Vacío = no se muestra.
-  WHATSAPP: '',
+  WHATSAPP: '573157292907',
 
   // Pestaña que se abre si no se puede detectar el idioma del visitante.
   IDIOMA_POR_DEFECTO: 'es',

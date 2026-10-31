@@ -43,7 +43,7 @@ Crea una hoja con **3 pestañas** con estos nombres exactos (puedes importar los
 - **Etiqueta**: opcional, ej. `Nuevo` o `Volumen 2`.
 - **Orden**: número para ordenar (1 primero).
 - **Visible**: `sí` o `no` (sirve para preparar libros antes de publicarlos).
-- **ID Colombia**: el ID del libro en la pestaña "Libros" de tu app de pedidos. Si lo llenas, el libro aparece en la pestaña Colombia con el botón "Pedir en Colombia".
+- **ID Colombia**: normalmente vacío. La pestaña Colombia muestra **todos** los libros, y el botón "Pedir en Colombia" usa el **ASIN** para preseleccionar el libro en la app de pedidos. Solo llénalo si en la app de pedidos usaste otro ID.
 - *(Avanzado, opcional)* Si en alguna tienda el libro tiene un enlace distinto, agrega una columna con el nombre de la tienda (ej. `amazon.co.jp`) y pega allí el enlace: tiene prioridad sobre el armado con el ASIN.
 
 ### Pestaña `Textos` (todos los textos del sitio)
@@ -76,6 +76,14 @@ Los cambios en la hoja aparecen en el sitio al recargar la página (a veces tard
 4. Guarda (💾). Elige la función `entrar` en el menú de arriba y pulsa **Ejecutar** una vez: Google te pedirá permiso para **enviar correos** (es nuevo). Acepta. (El error "Contraseña incorrecta" en ese momento es normal.)
 5. **Implementar → Gestionar implementaciones → ✏️ (editar) → Versión: Nueva versión → Implementar.** Así la URL `/exec` no cambia.
 6. Copia esa URL `/exec` en `config.js` → `URL_COLOMBIA`.
+
+### Lista de libros de la app de pedidos (pestaña `Libros` de tu hoja de PEDIDOS)
+El archivo `apps-script/libros-colombia.csv` trae los 6 libros listos, con el **ASIN como ID** (así el sitio y la app se entienden solos), su portada y su enlace. **Revisa los precios** (están en pesos, sin puntos) antes de importarlo:
+1. Abre tu hoja de PEDIDOS y ve a la pestaña `Libros`.
+2. **Archivo → Importar → Subir** y elige `libros-colombia.csv`.
+3. En **Ubicación de importación** elige **Reemplazar hoja actual** → **Importar datos**.
+
+Al agregar un libro nuevo: añade una fila aquí con su ASIN como ID, y otra en la hoja del catálogo.
 
 ### Qué mejoró en la app de pedidos
 - **Panel más seguro**: la contraseña se envía una sola vez; después se usa una sesión temporal de 6 horas. Tras 5 intentos fallidos se bloquea 15 minutos.
