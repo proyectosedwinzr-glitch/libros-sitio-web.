@@ -1,3 +1,3 @@
-Grupo,Idioma,Título,Subtítulo,Autor,Descripción,Portada,Etiqueta,Orden,Visible,ID Colombia,amazon.com,amazon.com.mx,amazon.es,amazon.co.uk,amazon.ca,amazon.co.jp,amazon.fr,amazon.de,amazon.it
-libro-1,es,Letras con historia,,Tu nombre de autor,"Aquí va la descripción del libro en español (cópiala de tu página de Amazon).",,,1,sí,1,https://www.amazon.com/dp/B0HN1D6ZG4,,,,,,,,
-libro-1,en,TÍTULO EN INGLÉS,,Tu nombre de autor,"Book description in English (copy it from your Amazon page).",,,1,no,,https://www.amazon.com/dp/XXXXXXXXXX,,,,,,,,
+Grupo,Idioma,Título,Subtítulo,Autor,Descripción,Portada,ASIN,Tiendas,Etiqueta,Orden,Visible,ID Colombia
+letras-con-historia,es,Letras con historia,Sopas de letras para adultos con historias reales y mensajes ocultos,Edwin Zar,Aquí va la descripción del libro en español (cópiala de tu página de Amazon).,,B0HN1D6ZG4,,,1,sí,1
+letras-con-historia,en,TÍTULO EN INGLÉS,,Edwin Zar,Book description in English (copy it from your Amazon page).,,,,,1,no,

@@ -22,7 +22,23 @@
     aviso_colombia: '¿Estás en Colombia? Pide tu libro aquí y paga por Bre-B.', aviso_colombia_boton: 'Ir a Colombia'
   };
 
-  let IDIOMAS = [], LIBROS = [], TEXTOS = {}, actual = 'es';
+  DEF.comprar_desde = 'Compro desde:';
+
+  // Tiendas de Amazon por país (código ISO). Las 14 primeras son las de libros de tapa blanda en KDP.
+  const TIENDAS = {
+    US: 'amazon.com', GB: 'amazon.co.uk', DE: 'amazon.de', FR: 'amazon.fr', ES: 'amazon.es', IT: 'amazon.it',
+    NL: 'amazon.nl', PL: 'amazon.pl', SE: 'amazon.se', BE: 'amazon.com.be', IE: 'amazon.ie', JP: 'amazon.co.jp',
+    CA: 'amazon.ca', AU: 'amazon.com.au', MX: 'amazon.com.mx', BR: 'amazon.com.br', IN: 'amazon.in'
+  };
+  const TAPA_BLANDA = ['US', 'GB', 'DE', 'FR', 'ES', 'IT', 'NL', 'PL', 'SE', 'BE', 'IE', 'JP', 'CA', 'AU'];
+  // Países sin tienda propia → tienda más cercana.
+  const CERCANA = { UK: 'GB', AT: 'DE', CH: 'DE', LI: 'DE', LU: 'FR', MC: 'FR', PT: 'ES', AD: 'ES', SM: 'IT', VA: 'IT', NZ: 'AU', DK: 'SE', NO: 'SE', FI: 'SE' };
+  const codigoPais = c => { c = String(c || '').trim().toUpperCase(); c = CERCANA[c] || c; return TIENDAS[c] ? c : ''; };
+  const codigoDeDominio = d => Object.keys(TIENDAS).find(k => TIENDAS[k] === String(d).replace(/^www\./, '')) || '';
+  const etiquetaPais = c => (c === 'GB' ? 'UK' : c);
+  const bandera = c => String.fromCodePoint(...[...c].map(x => 127397 + x.charCodeAt(0)));
+
+  let IDIOMAS = [], VISIBLES = [], LIBROS = [], TEXTOS = {}, actual = 'es', PAIS = 'US';
 
   // ---------- Lectura de datos ----------
   function parseCSV(t) {
@@ -48,10 +64,10 @@
     if (!cab) return [];
     const claves = cab.map(h => { const x = h.trim().toLowerCase(); return x.startsWith('amazon.') ? x : norm(x); });
     return resto.map(r => {
-      const o = { tiendas: {} };
+      const o = { tiendas_col: {} };
       claves.forEach((k, i) => {
         const v = (r[i] || '').trim();
-        if (k.startsWith('amazon.')) { if (v) o.tiendas[k] = v; } else if (k) o[k] = v;
+        if (k.startsWith('amazon.')) { if (v) o.tiendas_col[k] = v; } else if (k) o[k] = v;
       });
       return o;
     });
@@ -91,11 +107,9 @@
     IDIOMAS = idi.filter(i => i.codigo && siNo(i.activo, true)).map(i => ({
       codigo: i.codigo.toLowerCase(),
       nombre: i.nombre || i.codigo,
-      tienda: (i.tienda_principal || 'amazon.com').toLowerCase(),
-      respaldoTiendas: lista(i.tiendas_de_respaldo),
       respaldoIdiomas: lista(i.mostrar_libros_de)
     }));
-    if (!IDIOMAS.length) IDIOMAS = [{ codigo: 'es', nombre: 'Español', tienda: 'amazon.com', respaldoTiendas: [], respaldoIdiomas: [] }];
+    if (!IDIOMAS.length) IDIOMAS = [{ codigo: 'es', nombre: 'Español', respaldoIdiomas: [] }];
 
     const codigoDe = v => {
       const x = String(v || '').trim().toLowerCase();
@@ -104,8 +118,12 @@
     };
     LIBROS = cat.filter(b => b.titulo && siNo(b.visible, true)).map((b, n) => ({
       ...b, n, idioma: codigoDe(b.idioma), grupo: b.grupo || ('_fila' + n),
-      orden: isNaN(parseFloat(b.orden)) ? 9999 : parseFloat(b.orden)
+      orden: isNaN(parseFloat(b.orden)) ? 9999 : parseFloat(b.orden),
+      enlaces: enlacesLibro(b)
     }));
+    // Solo se muestran las pestañas de idiomas que tienen libros (salvo que config.js diga lo contrario).
+    VISIBLES = C.MOSTRAR_PESTANAS_VACIAS ? IDIOMAS : IDIOMAS.filter(L => librosPara(L).length);
+    if (!VISIBLES.length) VISIBLES = IDIOMAS.slice(0, 1);
 
     TEXTOS = {};
     tex.forEach(r => { if (r.clave) TEXTOS[r.clave.trim()] = r; });
@@ -154,13 +172,57 @@
     return res.sort((a, b) => a.ed.orden - b.ed.orden || a.ed.n - b.ed.n);
   }
 
-  function enlaces(ed, L) {
-    const todas = Object.entries(ed.tiendas).filter(([, u]) => urlSegura(u));
-    const preferidas = [L.tienda, ...L.respaldoTiendas, 'amazon.com'];
-    let principal = null;
-    for (const d of preferidas) if (ed.tiendas[d] && urlSegura(ed.tiendas[d])) { principal = [d, ed.tiendas[d]]; break; }
-    if (!principal && todas.length) principal = todas[0];
-    return { principal, otras: todas.filter(x => !principal || x[0] !== principal[0]), enSuTienda: !!principal && principal[0] === L.tienda };
+  // Enlaces de un libro: { 'US': url, 'DE': url, ... }.
+  // Con el ASIN se arman solos los de todas las tiendas (o solo las de la columna "Tiendas").
+  // Una columna "amazon.xx" con un enlace pegado tiene prioridad sobre el enlace armado.
+  function enlacesLibro(b) {
+    const m = {};
+    const am = String(b.asin || '').match(/(?:\/dp\/|\/gp\/product\/)?([A-Z0-9]{10})(?![A-Z0-9])/i);
+    if (am) {
+      const asin = am[1].toUpperCase();
+      const lst = lista(b.tiendas).map(codigoPais).filter(Boolean);
+      (lst.length ? lst : TAPA_BLANDA).forEach(c => { m[c] = 'https://www.' + TIENDAS[c] + '/dp/' + asin; });
+    }
+    Object.entries(b.tiendas_col || {}).forEach(([d, u]) => { const c = codigoDeDominio(d); if (c && urlSegura(u)) m[c] = u; });
+    return m;
+  }
+
+  function enlaces(ed) {
+    const m = ed.enlaces, codigos = Object.keys(m);
+    if (!codigos.length) return { principal: null, todas: [] };
+    const principal = m[PAIS] ? PAIS : (m.US ? 'US' : codigos[0]);
+    const todas = TAPA_BLANDA.concat(Object.keys(TIENDAS).filter(c => !TAPA_BLANDA.includes(c))).filter(c => m[c]);
+    return { principal, url: m[principal], todas, enSuPais: principal === PAIS };
+  }
+
+  function nombrePais(c, en) {
+    try { const n = new Intl.DisplayNames([en], { type: 'region' }).of(c); if (n) return n; } catch (e) { /* nada */ }
+    return etiquetaPais(c);
+  }
+
+  function detectarPais() {
+    try { const g = codigoPais(localStorage.getItem('pais')); if (g) return g; } catch (e) { /* nada */ }
+    for (const l of (navigator.languages || [navigator.language || ''])) {
+      const r = codigoPais(String(l).split('-')[1]);
+      if (r) return r;
+    }
+    let zona = ''; try { zona = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* nada */ }
+    const porZona = { 'Europe/London': 'GB', 'Europe/Dublin': 'IE', 'Europe/Berlin': 'DE', 'Europe/Vienna': 'DE', 'Europe/Zurich': 'DE',
+      'Europe/Paris': 'FR', 'Europe/Madrid': 'ES', 'Europe/Lisbon': 'ES', 'Europe/Rome': 'IT', 'Europe/Amsterdam': 'NL',
+      'Europe/Brussels': 'BE', 'Europe/Warsaw': 'PL', 'Europe/Stockholm': 'SE', 'Asia/Tokyo': 'JP' };
+    if (porZona[zona]) return porZona[zona];
+    if (/^Australia\//.test(zona)) return 'AU';
+    if (/^America\/(Toronto|Vancouver|Edmonton|Winnipeg|Halifax|St_Johns|Regina)/.test(zona)) return 'CA';
+    const base = String(navigator.language || '').split('-')[0];
+    return { ja: 'JP', de: 'DE', fr: 'FR', it: 'IT', nl: 'NL', pl: 'PL', sv: 'SE' }[base] || 'US';
+  }
+
+  function selectorPais() {
+    const usados = new Set(); LIBROS.forEach(b => Object.keys(b.enlaces).forEach(c => usados.add(c)));
+    TAPA_BLANDA.forEach(c => usados.add(c)); usados.add(PAIS);
+    const ops = [...usados].map(c => [c, nombrePais(c, actual)]).sort((a, b) => a[1].localeCompare(b[1], actual));
+    return `<div class="pais"><label>🌍 ${esc(t('comprar_desde'))}
+      <select id="pais">${ops.map(([c, n]) => `<option value="${c}"${c === PAIS ? ' selected' : ''}>${bandera(c)} ${esc(n)}</option>`).join('')}</select></label></div>`;
   }
 
   // ---------- Dibujo ----------
@@ -171,21 +233,21 @@
   }
 
   function tarjeta({ ed, eds, traducido }, L) {
-    const e = enlaces(ed, L);
+    const e = enlaces(ed);
     const etq = [];
     if (ed.etiqueta) etq.push(`<span class="etq nuevo">${esc(ed.etiqueta)}</span>`);
     if (!traducido) etq.push(`<span class="etq">${esc(t('edicion_en', { idioma: nombreIdioma(ed.idioma, L.codigo) }))}</span>`);
     const larga = (ed.descripcion || '').length > 260;
     let compra;
     if (e.principal) {
-      compra = (e.enSuTienda ? '' : `<p class="nota">${esc(t('no_en_tienda', { tienda: nombreTienda(L.tienda) }))}</p>`) +
-        `<a class="btn amz" href="${esc(urlSegura(e.principal[1]))}" target="_blank" rel="noopener">${esc(t('comprar', { tienda: nombreTienda(e.principal[0]) }))}</a>` +
-        (e.otras.length ? `<details><summary>${esc(t('otras_tiendas'))}</summary><ul>${e.otras.map(([d, u]) =>
-          `<li><a href="${esc(urlSegura(u))}" target="_blank" rel="noopener">${esc(nombreTienda(d))}</a></li>`).join('')}</ul></details>` : '');
+      compra = (e.enSuPais ? '' : `<p class="nota">${esc(t('no_en_tienda', { tienda: nombreTienda(TIENDAS[PAIS]) }))}</p>`) +
+        `<a class="btn amz" href="${esc(urlSegura(e.url))}" target="_blank" rel="noopener">${esc(t('comprar', { tienda: nombreTienda(TIENDAS[e.principal]) }))}</a>` +
+        (e.todas.length > 1 ? `<details><summary>${esc(t('otras_tiendas'))}</summary><div class="chips">${e.todas.map(c =>
+          `<a href="${esc(urlSegura(ed.enlaces[c]))}" target="_blank" rel="noopener" title="${esc(nombrePais(c, L.codigo))} · ${esc(nombreTienda(TIENDAS[c]))}"${c === e.principal ? ' class="on"' : ''}>${bandera(c)} ${etiquetaPais(c)}</a>`).join('')}</div></details>` : '');
     } else compra = `<span class="prox">${esc(t('proximamente'))}</span>`;
-    const otras = eds.filter(x => x !== ed && x.idioma !== ed.idioma && IDIOMAS.some(i => i.codigo === x.idioma));
+    const otras = eds.filter(x => x !== ed && x.idioma !== ed.idioma && VISIBLES.some(i => i.codigo === x.idioma));
     const tambien = otras.length ? `<div class="tambien">${esc(t('tambien_en'))} ${otras.map(x => {
-      const i = IDIOMAS.find(i => i.codigo === x.idioma);
+      const i = VISIBLES.find(i => i.codigo === x.idioma);
       return `<a href="#${esc(x.idioma)}/${esc(slug(ed.grupo))}" title="${esc(x.titulo)}" lang="${esc(x.idioma)}">${esc(i.nombre)}</a>`;
     }).join('')}</div>` : '';
     return `<article class="card" id="l-${esc(slug(ed.grupo))}" lang="${esc(ed.idioma)}">
@@ -217,7 +279,7 @@
 
   function pintarIdioma(L) {
     const items = librosPara(L);
-    $('#contenido').innerHTML = `<h2>${esc(t('catalogo'))}</h2>` + (items.length
+    $('#contenido').innerHTML = `<div class="cab"><h2>${esc(t('catalogo'))}</h2>${selectorPais()}</div>` + (items.length
       ? `<div class="grid">${items.map(x => tarjeta(x, L)).join('')}</div>`
       : `<p class="vacio">${esc(t('sin_libros'))}</p>`);
   }
@@ -259,7 +321,7 @@
   }
 
   // ---------- Navegación ----------
-  const valida = p => p === 'colombia' || IDIOMAS.some(i => i.codigo === p);
+  const valida = p => p === 'colombia' || VISIBLES.some(i => i.codigo === p);
 
   function inicial() {
     const h = decodeURIComponent(location.hash.slice(1)).split('/')[0].toLowerCase();
@@ -267,10 +329,10 @@
     try { const g = localStorage.getItem('pestana'); if (valida(g)) return g; } catch (e) { /* nada */ }
     for (const l of (navigator.languages || [navigator.language || ''])) {
       const x = String(l).toLowerCase();
-      const i = IDIOMAS.find(i => i.codigo === x) || IDIOMAS.find(i => i.codigo === x.split('-')[0]);
+      const i = VISIBLES.find(i => i.codigo === x) || VISIBLES.find(i => i.codigo === x.split('-')[0]);
       if (i) return i.codigo;
     }
-    return valida(C.IDIOMA_POR_DEFECTO) ? C.IDIOMA_POR_DEFECTO : IDIOMAS[0].codigo;
+    return valida(C.IDIOMA_POR_DEFECTO) ? C.IDIOMA_POR_DEFECTO : VISIBLES[0].codigo;
   }
 
   function mostrar(p, libro) {
@@ -289,6 +351,13 @@
     mostrar(valida((p || '').toLowerCase()) ? p.toLowerCase() : inicial(), libro);
   }
 
+  document.addEventListener('change', ev => {
+    if (ev.target.id !== 'pais') return;
+    PAIS = codigoPais(ev.target.value) || 'US';
+    try { localStorage.setItem('pais', PAIS); } catch (e) { /* nada */ }
+    const y = window.scrollY; mostrar(actual); window.scrollTo(0, y);
+  });
+
   document.addEventListener('click', ev => {
     const mas = ev.target.closest('.mas');
     if (mas) {
@@ -300,7 +369,8 @@
   });
 
   cargar().then(() => {
-    $('#pestanas').innerHTML = IDIOMAS.map(i =>
+    PAIS = detectarPais();
+    $('#pestanas').innerHTML = VISIBLES.map(i =>
       `<a href="#${esc(i.codigo)}" data-p="${esc(i.codigo)}" lang="${esc(i.codigo)}">${esc(i.nombre)}</a>`).join('') +
       `<a href="#colombia" data-p="colombia" class="col">🇨🇴 Colombia</a>`;
     window.addEventListener('hashchange', ruta);

@@ -2,6 +2,7 @@ Clave,es,en,ja,fr,de,it
 titulo_sitio,Libros de {autor},Books by {autor},{autor}の本,Livres de {autor},Bücher von {autor},Libri di {autor}
 lema,Descubre mis libros y consíguelos en la tienda Amazon de tu país.,Discover my books and get them from your country's Amazon store.,私の本をご紹介します。お住まいの国のAmazonでお求めいただけます。,Découvrez mes livres et procurez-les sur l'Amazon de votre pays.,Entdecken Sie meine Bücher und kaufen Sie sie bei Amazon in Ihrem Land.,Scopri i miei libri e acquistali sull'Amazon del tuo paese.
 catalogo,Catálogo,Catalog,作品一覧,Catalogue,Katalog,Catalogo
+comprar_desde,Compro desde:,I'm shopping from:,購入する国：,J'achète depuis :,Ich kaufe aus:,Acquisto da:
 comprar,Comprar en {tienda},Buy on {tienda},{tienda}で購入,Acheter sur {tienda},Bei {tienda} kaufen,Acquista su {tienda}
 no_en_tienda,Aún no está en {tienda}.,Not yet available on {tienda}.,{tienda}ではまだお取り扱いがありません。,Pas encore disponible sur {tienda}.,Noch nicht bei {tienda} erhältlich.,Non ancora disponibile su {tienda}.
 proximamente,Próximamente,Coming soon,近日発売,Bientôt disponible,Demnächst erhältlich,Prossimamente

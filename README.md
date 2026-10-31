@@ -16,29 +16,35 @@ El sitio tiene **dos partes**:
 
 Crea una hoja con **3 pestañas** con estos nombres exactos (puedes importar los archivos de la carpeta `datos/` con *Archivo → Importar → Subir → "Insertar hojas nuevas"* y luego renombrarlas):
 
-### Pestaña `Idiomas` (una fila por pestaña del sitio)
-| Código | Nombre | Tienda principal | Tiendas de respaldo | Mostrar libros de | Activo |
-|---|---|---|---|---|---|
-| es | Español | amazon.com | amazon.com.mx, amazon.es | en | sí |
-| ja | 日本語 | amazon.co.jp | amazon.com | en, es | sí |
+### Cómo funciona el sitio
+- **Las pestañas son el idioma en que está escrito el libro** (Español, English, 日本語…). Solo aparecen las pestañas de idiomas que ya tienen libros.
+- **El visitante elige desde qué país compra** ("Compro desde: 🇩🇪 Alemania"). El sitio lo adivina por el navegador y lo recuerda. El botón principal lleva a la tienda Amazon de ese país.
+- Cada libro tiene además **"Otras tiendas Amazon"**, con las 14 tiendas que muestra KDP en "Ver en Amazon": US, UK, DE, FR, ES, IT, NL, PL, SE, BE, IE, JP, CA, AU.
 
-- **Tienda principal**: el Amazon al que lleva el botón en esa pestaña.
-- **Tiendas de respaldo**: si el libro no está en la principal, se usa la primera de estas que tenga enlace (y se muestra el aviso "Aún no está en Amazon.co.jp").
-- **Mostrar libros de**: si un libro no tiene versión en ese idioma, se muestra la versión en estos idiomas (con la etiqueta "Edición en inglés"). Déjalo vacío si solo quieres libros traducidos.
-- **Agregar un idioma nuevo** (ej. portugués): agrega una fila `pt, Português, amazon.com.br, amazon.com, en, sí` y una columna `pt` en la pestaña Textos. No se toca el código.
+### Pestaña `Idiomas` (una fila por pestaña del sitio)
+| Código | Nombre | Mostrar libros de | Activo |
+|---|---|---|---|
+| es | Español | | sí |
+| ja | 日本語 | | sí |
+
+- **Mostrar libros de**: normalmente vacío. Si escribes `en`, esa pestaña también muestra los libros en inglés (con la etiqueta "Edición en inglés").
+- **Agregar un idioma nuevo** (ej. portugués): agrega la fila `pt, Português, , sí` y una columna `pt` en la pestaña Textos. No se toca el código.
 
 ### Pestaña `Catalogo` (una fila por cada versión/idioma de cada libro)
-| Grupo | Idioma | Título | Subtítulo | Autor | Descripción | Portada | Etiqueta | Orden | Visible | ID Colombia | amazon.com | amazon.com.mx | amazon.es | amazon.co.uk | amazon.ca | amazon.co.jp | amazon.fr | amazon.de | amazon.it |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Grupo | Idioma | Título | Subtítulo | Autor | Descripción | Portada | ASIN | Tiendas | Etiqueta | Orden | Visible | ID Colombia |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| letras-con-historia | es | Letras con historia | Sopas de letras para adultos… | Edwin Zar | (texto) | (enlace) | B0HN1D6ZG4 | | | 1 | sí | 1 |
 
-- **Grupo**: un nombre corto igual para todas las versiones del mismo libro (ej. `letras`). Así se vinculan "Letras con historia" (es) con su versión en inglés.
-- **Idioma**: el código (`es`, `en`, `ja`, `fr`, `de`, `it`).
+- **Grupo**: un nombre corto igual para todas las versiones del mismo libro. Así se vincula "Letras con historia" (es) con su versión en inglés ("También en: English").
+- **Idioma**: el código del idioma en que está escrito el libro (`es`, `en`, `ja`, `fr`, `de`, `it`).
+- **ASIN**: el código de 10 letras/números del libro (está en el enlace de Amazon después de `/dp/`). También puedes pegar el enlace completo. Con él, el sitio arma solo los enlaces de **todas** las tiendas.
+- **Tiendas**: déjalo vacío si el libro está en las 14 tiendas de tapa blanda. Si solo está en algunas, escribe sus códigos separados por coma, ej. `US, UK, DE, JP`.
 - **Portada**: enlace a la imagen. Sirve un enlace de Google Drive (compartido como "Cualquier persona con el enlace"), un enlace de imagen de Amazon, o un archivo subido a la carpeta `portadas/` (escribe `portadas/nombre.jpg`).
 - **Etiqueta**: opcional, ej. `Nuevo` o `Volumen 2`.
 - **Orden**: número para ordenar (1 primero).
 - **Visible**: `sí` o `no` (sirve para preparar libros antes de publicarlos).
 - **ID Colombia**: el ID del libro en la pestaña "Libros" de tu app de pedidos. Si lo llenas, el libro aparece en la pestaña Colombia con el botón "Pedir en Colombia".
-- **amazon.xxx**: pega el enlace de ese libro en cada tienda. Deja vacías las tiendas donde no está. Puedes agregar más columnas de tiendas (ej. `amazon.com.br`): cualquier columna que empiece por `amazon.` se reconoce sola.
+- *(Avanzado, opcional)* Si en alguna tienda el libro tiene un enlace distinto, agrega una columna con el nombre de la tienda (ej. `amazon.co.jp`) y pega allí el enlace: tiene prioridad sobre el armado con el ASIN.
 
 ### Pestaña `Textos` (todos los textos del sitio)
 | Clave | es | en | ja | fr | de | it |

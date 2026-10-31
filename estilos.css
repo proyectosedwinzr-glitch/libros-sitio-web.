@@ -69,3 +69,12 @@ footer{text-align:center;color:var(--suave);font-size:13px;padding:24px 16px 40p
   .pestanas a.col{margin-left:0}
 }
 @media (max-width:340px){.grid{grid-template-columns:1fr}}
+
+/* Selector de país y tiendas */
+.cab{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.cab h2{margin:0}
+.pais label{font-size:14px;color:var(--suave);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pais select{font-size:15px;padding:7px 8px;border:1px solid #bbb;border-radius:8px;background:#fff;max-width:220px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chips a{font-size:13px;text-decoration:none;color:var(--c);border:1px solid #cdd8e4;border-radius:6px;padding:4px 7px;white-space:nowrap}
+.chips a.on{background:var(--c);color:#fff;border-color:var(--c)}
