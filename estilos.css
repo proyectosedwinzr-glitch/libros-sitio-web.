@@ -2,7 +2,7 @@
 *{box-sizing:border-box}
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP",Arial,sans-serif;margin:0;background:var(--g);color:var(--t);line-height:1.5}
 .top{position:relative;background:var(--c);color:#fff;padding:22px 16px 18px;text-align:center}
-.idioma{position:absolute;top:10px;right:12px;font-size:15px}
+.idioma{position:absolute;top:10px;right:12px;font-size:14px;color:#dfe8f1}
 .idioma select{font-size:15px;padding:5px 6px;border-radius:8px;border:0;background:#fff;color:#163a5b}
 .idioma select:disabled{opacity:.6}
 .top h1{margin:0;font-size:clamp(22px,5vw,32px)}
@@ -12,6 +12,7 @@ body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Sans","Noto
 /* Pestañas: se desplazan de lado en el celular */
 .pestanas{position:sticky;top:0;z-index:10;background:var(--c2);display:flex;gap:6px;overflow-x:auto;padding:8px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .pestanas::-webkit-scrollbar{display:none}
+.etq-pest{flex:0 0 auto;align-self:center;color:#f5c542;font-weight:bold;font-size:15px;padding:0 4px 0 2px;white-space:nowrap}
 .pestanas a{flex:0 0 auto;color:#fff;text-decoration:none;padding:8px 14px;border-radius:999px;font-size:15px;white-space:nowrap;background:#ffffff1a}
 .pestanas a.activa{background:#fff;color:var(--c2);font-weight:bold}
 .pestanas a.col{margin-left:auto;background:#fcd116;color:#003893;font-weight:bold}
@@ -80,8 +81,8 @@ footer{text-align:center;color:var(--suave);font-size:13px;padding:24px 16px 40p
 .pais{background:#fff;border:2px solid var(--am);border-radius:12px;padding:12px 16px;margin:4px 0 16px;box-shadow:0 1px 4px #0002}
 .pais label{font-size:18px;font-weight:bold;color:var(--c2);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pais select{font-size:18px;padding:9px 10px;border:2px solid var(--c);border-radius:8px;background:#fff;min-width:240px;max-width:100%;font-weight:normal}
-.pais-nota{margin:8px 0 0;font-size:15px;color:#333}
-.usar-us{background:none;color:var(--c);text-decoration:underline;padding:0;font-size:15px;font-weight:bold}
+.pais-nota{margin:6px 0 0;font-size:15px;color:#444}
+.pais-info{margin:10px 0 0;font-size:16px;font-weight:bold;color:var(--c2)}
 .titulo-libros{margin:6px 0 14px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .chips a{font-size:13px;text-decoration:none;color:var(--c);border:1px solid #cdd8e4;border-radius:6px;padding:4px 7px;white-space:nowrap}
