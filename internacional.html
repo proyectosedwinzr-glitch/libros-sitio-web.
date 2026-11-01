@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Libros</title>
+<meta name="description" content="Catálogo de libros. Cómpralos en la tienda Amazon de tu país.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Libros">
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+<header class="top">
+  <label class="idioma" title="Idioma / Language">🌐 <select id="idioma" aria-label="Idioma / Language"></select></label>
+  <h1 id="titulo">Libros</h1>
+  <p id="subtitulo" class="subtit"></p>
+  <p id="lema"></p>
+</header>
+
+<nav id="pestanas" class="pestanas" aria-label="Idioma / Language"></nav>
+
+<div id="aviso" class="aviso" hidden></div>
+
+<main id="contenido">
+  <p class="cargando">Cargando…</p>
+</main>
+
+<footer id="pie"></footer>
+
+<script src="config.js"></script>
+<!-- Versión internacional: igual al sitio principal, pero sin la pestaña Colombia -->
+<script>window.CONFIG.MOSTRAR_COLOMBIA = false;</script>
+<script src="app.js"></script>
+</body>
+</html>
