@@ -15,7 +15,7 @@ window.CONFIG = {
   URL_COLOMBIA: 'https://script.google.com/macros/s/AKfycbxQk3uZBOKCTLp0_ttCM9f5eb-_l0XVYucNbjB3XUEijzuzthAJA0DtGK2CvGszegHzsQ/exec',
 
   // Tu WhatsApp para la pestaña Colombia: 57 + número, sin + ni espacios. Vacío = no se muestra.
-  WHATSAPP: '573157292907',
+  WHATSAPP: '573015863708',
 
   // Pestaña que se abre si no se puede detectar el idioma del visitante.
   IDIOMA_POR_DEFECTO: 'es',
