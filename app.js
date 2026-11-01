@@ -22,7 +22,7 @@
     aviso_colombia: '¿Estás en Colombia? Pide aquí tus libros y paga por Bre-B.', colombia_seguimiento: 'Consultar mi pedido', aviso_colombia_boton: 'Ir a Colombia'
   };
 
-  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}';
+  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}'; DEF.pais_nota = '¿Tu país no está en la lista? Elige «{pais}» para comprar en Amazon.com, que envía a muchos países.'; DEF.pais_usar = 'Usar Amazon.com';
 
   // Tiendas de Amazon por país (código ISO). Las 14 primeras son las de libros de tapa blanda en KDP.
   const TIENDAS = {
@@ -232,8 +232,10 @@
     const usados = new Set(); LIBROS.forEach(b => Object.keys(b.enlaces).forEach(c => usados.add(c)));
     TAPA_BLANDA.forEach(c => usados.add(c)); usados.add(PAIS);
     const ops = [...usados].map(c => [c, nombrePais(c, UI)]).sort((a, b) => a[1].localeCompare(b[1], UI));
-    return `<div class="pais"><label>🌍 ${esc(t('comprar_desde'))}
-      <select id="pais">${ops.map(([c, n]) => `<option value="${c}"${c === PAIS ? ' selected' : ''}>${bandera(c)} ${esc(n)}</option>`).join('')}</select></label></div>`;
+    return `<div class="pais"><label><span>🌍 ${esc(t('comprar_desde'))}</span>
+      <select id="pais">${ops.map(([c, n]) => `<option value="${c}"${c === PAIS ? ' selected' : ''}>${bandera(c)} ${esc(n)}</option>`).join('')}</select></label>
+      <p class="pais-nota">${esc(t('pais_nota', { pais: nombrePais('US', UI) }))}
+      ${PAIS !== 'US' ? ` <button type="button" class="usar-us">${esc(t('pais_usar', { pais: nombrePais('US', UI) }))}</button>` : ''}</p></div>`;
   }
 
   // ---------- Dibujo ----------
@@ -292,7 +294,7 @@
 
   function pintarIdioma(L) {
     const items = librosPara(L);
-    $('#contenido').innerHTML = `<div class="cab"><h2>${esc(t('libros_en', { idioma: nombreIdioma(L.codigo, UI) }))}</h2>${selectorPais()}</div>` + (items.length
+    $('#contenido').innerHTML = `${selectorPais()}<h2 class="titulo-libros">${esc(t('libros_en', { idioma: nombreIdioma(L.codigo, UI) }))}</h2>` + (items.length
       ? `<div class="grid">${items.map(x => tarjeta(x, L)).join('')}</div>`
       : `<p class="vacio">${esc(t('sin_libros'))}</p>`);
   }
@@ -335,6 +337,7 @@
 
   function aviso() {
     const el = $('#aviso');
+    if (!CON_COLOMBIA) { el.hidden = true; return; }
     let enCol = false;
     try { enCol = Intl.DateTimeFormat().resolvedOptions().timeZone === 'America/Bogota'; } catch (e) { /* nada */ }
     let cerrado = false; try { cerrado = sessionStorage.getItem('avisoCol') === '1'; } catch (e) { /* nada */ }
@@ -344,7 +347,8 @@
   }
 
   // ---------- Navegación ----------
-  const valida = p => p === 'colombia' || VISIBLES.some(i => i.codigo === p);
+  const CON_COLOMBIA = C.MOSTRAR_COLOMBIA !== false;   // false = versión del sitio sin la pestaña Colombia
+  const valida = p => (p === 'colombia' && CON_COLOMBIA) || VISIBLES.some(i => i.codigo === p);
 
   // Idioma de los textos: el que eligió el visitante, o el de su navegador (entre los 6 idiomas).
   function detectarUI() {
@@ -404,6 +408,10 @@
       mas.textContent = t(abierta ? 'ver_mas' : 'ver_menos');
     }
     if (ev.target.closest('[data-ir]')) location.hash = 'colombia';
+    if (ev.target.closest('.usar-us')) {
+      PAIS = 'US'; try { localStorage.setItem('pais', PAIS); } catch (e) { /* nada */ }
+      const y = window.scrollY; mostrar(actual); window.scrollTo(0, y);
+    }
     if (ev.target.closest('.aviso .x')) { try { sessionStorage.setItem('avisoCol', '1'); } catch (e) { /* nada */ } $('#aviso').hidden = true; }
   });
 
@@ -413,7 +421,7 @@
     $('#idioma').innerHTML = IDIOMAS.map(i => `<option value="${esc(i.codigo)}" lang="${esc(i.codigo)}">${esc(i.nombre)}</option>`).join('');
     $('#pestanas').innerHTML = VISIBLES.map(i =>
       `<a href="#${esc(i.codigo)}" data-p="${esc(i.codigo)}" lang="${esc(i.codigo)}">${esc(i.nombre)}</a>`).join('') +
-      `<a href="#colombia" data-p="colombia" class="col">🇨🇴 Colombia</a>`;
+      (CON_COLOMBIA ? `<a href="#colombia" data-p="colombia" class="col">🇨🇴 Colombia</a>` : '');
     window.addEventListener('hashchange', ruta);
     ruta();
   });

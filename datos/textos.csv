@@ -5,6 +5,8 @@ lema,Descubre nuestros libros y consíguelos en la tienda Amazon de tu país.,Di
 catalogo,Catálogo,Catalog,作品一覧,Catalogue,Katalog,Catalogo
 libros_en,Libros en {idioma},Books in {idioma},{idioma}の本,Livres en {idioma},Bücher auf {idioma},Libri in {idioma}
 comprar_desde,Compro desde:,I'm shopping from:,購入する国：,J'achète depuis :,Ich kaufe aus:,Acquisto da:
+pais_nota,"¿Tu país no está en la lista? Elige «{pais}» para comprar en Amazon.com, que envía a muchos países.","Is your country not on the list? Choose “{pais}” to buy on Amazon.com, which ships to many countries.",お住まいの国がリストにない場合は「{pais}」を選び、Amazon.comでご購入ください（多くの国へ配送しています）。,"Votre pays n'est pas dans la liste ? Choisissez « {pais} » pour acheter sur Amazon.com, qui livre dans de nombreux pays.","Ihr Land ist nicht in der Liste? Wählen Sie „{pais}“, um bei Amazon.com zu kaufen – Amazon.com liefert in viele Länder.","Il tuo paese non è nell'elenco? Scegli «{pais}» per acquistare su Amazon.com, che spedisce in molti paesi."
+pais_usar,Usar Amazon.com,Use Amazon.com,Amazon.comを使う,Utiliser Amazon.com,Amazon.com verwenden,Usa Amazon.com
 comprar,Comprar en {tienda},Buy on {tienda},{tienda}で購入,Acheter sur {tienda},Bei {tienda} kaufen,Acquista su {tienda}
 no_en_tienda,Aún no está en {tienda}.,Not yet available on {tienda}.,{tienda}ではまだお取り扱いがありません。,Pas encore disponible sur {tienda}.,Noch nicht bei {tienda} erhältlich.,Non ancora disponibile su {tienda}.
 proximamente,Próximamente,Coming soon,近日発売,Bientôt disponible,Demnächst erhältlich,Prossimamente

@@ -22,6 +22,13 @@ Crea una hoja con **3 pestañas** con estos nombres exactos (puedes importar los
 - **El visitante elige desde qué país compra** ("Compro desde: 🇩🇪 Alemania"). El sitio lo adivina por el navegador y lo recuerda. El botón principal lleva a la tienda Amazon de ese país.
 - Cada libro tiene además **"Otras tiendas Amazon"**, con las 14 tiendas que muestra KDP en "Ver en Amazon": US, UK, DE, FR, ES, IT, NL, PL, SE, BE, IE, JP, CA, AU.
 
+
+### Dos versiones del sitio (mismos libros, mismos textos)
+- **Principal (con pestaña Colombia):** `https://proyectosedwinzr-glitch.github.io/libros-sitio-web./`
+- **Internacional (sin pestaña Colombia):** `https://proyectosedwinzr-glitch.github.io/libros-sitio-web./internacional.html`
+
+Las dos usan los mismos datos y el mismo código: un libro o un texto nuevo aparece en ambas. La única diferencia es la línea `MOSTRAR_COLOMBIA = false` dentro de `internacional.html`.
+
 ### Pestaña `Idiomas` (una fila por pestaña del sitio)
 | Código | Nombre | Mostrar libros de | Activo |
 |---|---|---|---|
