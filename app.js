@@ -22,7 +22,7 @@
     aviso_colombia: '¿Estás en Colombia? Pide aquí tus libros y paga por Bre-B.', colombia_seguimiento: 'Consultar mi pedido', aviso_colombia_boton: 'Ir a Colombia'
   };
 
-  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}'; DEF.pais_nota = '¿Tu país no está en la lista? Elige «{pais}» para comprar en Amazon.com, que envía a muchos países.'; DEF.pais_usar = 'Usar Amazon.com';
+  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}'; DEF.pais_nota = '¿Tu país no está en la lista? Elige «{pais}» para comprar en Amazon.com, que envía a muchos países.'; DEF.pais_info = 'Los botones de cada libro te llevan directamente a la página de compra en la tienda Amazon que elijas.'; DEF.libros_idioma = 'Idioma de los libros:'; DEF.idioma_pagina = 'Idioma de la página';
 
   // Tiendas de Amazon por país (código ISO). Las 14 primeras son las de libros de tapa blanda en KDP.
   const TIENDAS = {
@@ -36,7 +36,9 @@
   const codigoPais = c => { c = String(c || '').trim().toUpperCase(); c = CERCANA[c] || c; return TIENDAS[c] ? c : ''; };
   const codigoDeDominio = d => Object.keys(TIENDAS).find(k => TIENDAS[k] === String(d).replace(/^www\./, '')) || '';
   const etiquetaPais = c => (c === 'GB' ? 'UK' : c);
-  const bandera = c => String.fromCodePoint(...[...c].map(x => 127397 + x.charCodeAt(0)));
+  // Windows no dibuja banderas (muestra letras sueltas): ahí no las usamos.
+  const SIN_BANDERAS = /Windows/i.test(navigator.userAgent || '');
+  const bandera = c => SIN_BANDERAS ? '' : String.fromCodePoint(...[...c].map(x => 127397 + x.charCodeAt(0)));
 
   // actual = pestaña de libros (idioma en que está escrito el libro, o 'colombia')
   // UI = idioma en que se muestran los textos del sitio (selector 🌐, los 6 idiomas)
@@ -234,8 +236,8 @@
     const ops = [...usados].map(c => [c, nombrePais(c, UI)]).sort((a, b) => a[1].localeCompare(b[1], UI));
     return `<div class="pais"><label><span>🌍 ${esc(t('comprar_desde'))}</span>
       <select id="pais">${ops.map(([c, n]) => `<option value="${c}"${c === PAIS ? ' selected' : ''}>${bandera(c)} ${esc(n)}</option>`).join('')}</select></label>
-      <p class="pais-nota">${esc(t('pais_nota', { pais: nombrePais('US', UI) }))}
-      ${PAIS !== 'US' ? ` <button type="button" class="usar-us">${esc(t('pais_usar', { pais: nombrePais('US', UI) }))}</button>` : ''}</p></div>`;
+      <p class="pais-info">🛒 ${esc(t('pais_info'))}</p>
+      <p class="pais-nota">${esc(t('pais_nota', { pais: nombrePais('US', UI) }))}</p></div>`;
   }
 
   // ---------- Dibujo ----------
@@ -285,6 +287,8 @@
     document.title = t('titulo_sitio') + (actual === 'colombia' ? ' · Colombia' : '');
     const m = document.querySelector('meta[name=description]'); if (m && t('lema')) m.content = t('lema');
     $('#pie').textContent = t('pie');
+    const ep = $('#etqPest'); if (ep) ep.textContent = '📚 ' + t('libros_idioma');
+    const ip = $('#etqIdioma'); if (ip) ip.textContent = t('idioma_pagina');
     document.querySelectorAll('#pestanas a').forEach(a => {
       const on = a.dataset.p === actual;
       a.classList.toggle('activa', on); a.setAttribute('aria-current', on ? 'page' : 'false');
@@ -408,10 +412,6 @@
       mas.textContent = t(abierta ? 'ver_mas' : 'ver_menos');
     }
     if (ev.target.closest('[data-ir]')) location.hash = 'colombia';
-    if (ev.target.closest('.usar-us')) {
-      PAIS = 'US'; try { localStorage.setItem('pais', PAIS); } catch (e) { /* nada */ }
-      const y = window.scrollY; mostrar(actual); window.scrollTo(0, y);
-    }
     if (ev.target.closest('.aviso .x')) { try { sessionStorage.setItem('avisoCol', '1'); } catch (e) { /* nada */ } $('#aviso').hidden = true; }
   });
 
@@ -419,9 +419,9 @@
     PAIS = detectarPais();
     UI = detectarUI();
     $('#idioma').innerHTML = IDIOMAS.map(i => `<option value="${esc(i.codigo)}" lang="${esc(i.codigo)}">${esc(i.nombre)}</option>`).join('');
-    $('#pestanas').innerHTML = VISIBLES.map(i =>
+    $('#pestanas').innerHTML = `<span class="etq-pest" id="etqPest"></span>` + VISIBLES.map(i =>
       `<a href="#${esc(i.codigo)}" data-p="${esc(i.codigo)}" lang="${esc(i.codigo)}">${esc(i.nombre)}</a>`).join('') +
-      (CON_COLOMBIA ? `<a href="#colombia" data-p="colombia" class="col">🇨🇴 Colombia</a>` : '');
+      (CON_COLOMBIA ? `<a href="#colombia" data-p="colombia" class="col">${bandera('CO')} Colombia</a>` : '');
     window.addEventListener('hashchange', ruta);
     ruta();
   });
