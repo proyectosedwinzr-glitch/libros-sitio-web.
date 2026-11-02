@@ -5,10 +5,13 @@
 
 const LIB = ['ID','Título','Autor','Precio','Portada (URL)','Enlace Amazon'];
 const COLS = ['ID','Fecha','Estado','Libro','Precio','Envío','Total','Nombre','Cédula','Email','Teléfono','Ciudad','Dirección','Barrio','Indicaciones','Entrega','Comprobante','Verificada',
-              'Cantidad','Historial','Acepta novedades'];
+              'Cantidad','Historial','Acepta novedades','Forma de pago'];
 const CLI = ['Cédula','Nombre','Email','Teléfono','Ciudad','Pedidos','Total comprado','Primer pedido','Último pedido','Acepta novedades','Fecha autorización','Código baja','Última novedad'];
 
 const ESTADOS = ['Pago por verificar', 'Pago verificado', 'Pedido en Amazon', 'Recibido de Amazon', 'Listo para entrega', 'Entregado'];
+// Pasos de los pedidos con pago contra entrega (se paga al recibir).
+const ESTADOS_CE = ['Pedido recibido', 'Pedido confirmado', 'Pedido en Amazon', 'Recibido de Amazon', 'Listo para entrega', 'Entregado y pagado'];
+const PAGO_BREB = 'Bre-B', PAGO_CE = 'Contra entrega';
 const CANCELADO = 'Cancelado';
 const ANTIGUOS = { 'Pendiente de activación': 'Pago por verificar', 'Activo': 'Pago verificado' };
 const MENSAJES = {
@@ -18,6 +21,9 @@ const MENSAJES = {
   'Recibido de Amazon': 'Tu libro llegó desde Amazon. Lo estamos preparando para la entrega.',
   'Listo para entrega': 'Tu pedido está listo y va en camino a la dirección que indicaste.',
   'Entregado': '¡Tu pedido fue entregado! Gracias por tu compra. Esperamos que lo disfrutes.',
+  'Pedido recibido': 'Recibimos tu pedido. Te escribiremos por WhatsApp para confirmarlo.',
+  'Pedido confirmado': 'Confirmamos tu pedido. Ahora compramos tu libro en Amazon.',
+  'Entregado y pagado': '¡Tu pedido fue entregado! Gracias por tu compra. Esperamos que lo disfrutes.',
   'Cancelado': 'Tu pedido fue cancelado. Si tienes preguntas, escríbenos por WhatsApp.'
 };
 const ENTREGA_MED = 'Medellín y área metropolitana';
@@ -32,6 +38,7 @@ function doGet(e) {
   t.modo = p.admin ? 'admin' : (p.seguimiento !== undefined || p.pedido ? 'seguimiento' : 'tienda');
   t.libro = String(p.libro || '').replace(/[^\w-]/g, '').slice(0, 40);
   t.pedido = String(p.pedido || '').replace(/[^\w-]/g, '').slice(0, 30);
+  t.pago = p.pago === 'ce' ? 'ce' : '';   // ?pago=ce → pedido contra entrega (sin datos de pago ni comprobante)
   return t.evaluate().setTitle(NOMBRE_TIENDA + ' · Pedidos Colombia')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -58,6 +65,9 @@ function hoja_(n, cab) {
   if (cab.some((c, i) => h[i] !== c && !h[i])) s.getRange(1, 1, 1, cab.length).setValues([cab.map((c, i) => h[i] || c)]);
   return s;
 }
+
+// Lista de pasos según la forma de pago del pedido.
+function estadosDe_(r) { return r[COLS.indexOf('Forma de pago')] === PAGO_CE ? ESTADOS_CE : ESTADOS; }
 
 function filaObj_(cab, r) {
   const o = {};
@@ -93,7 +103,9 @@ function crearPedido(d, f) {
     return { l: l, cant: cant };
   });
   if (!items.length) throw new Error('Agrega al menos un libro a tu pedido.');
-  if (!f || !f.data || f.data.length > 7e6) throw new Error('Comprobante inválido o muy pesado (máx. 5 MB).');
+  const ce = d.pago === 'ce';
+  const est = ce ? ESTADOS_CE : ESTADOS;
+  if (!ce && (!f || !f.data || f.data.length > 7e6)) throw new Error('Comprobante inválido o muy pesado (máx. 5 MB).');
   const c = k => limpio_(d[k]);
   if (!c('nombre') || !c('cedula') || !c('email') || !c('telefono') || !c('direccion') || !c('ciudad')) throw new Error('Faltan datos obligatorios.');
   if (!d.autorizaDatos) throw new Error('Debes autorizar el tratamiento de tus datos para hacer el pedido.');
@@ -121,16 +133,19 @@ function crearPedido(d, f) {
     const ultimo = s.getLastRow() > 1 ? String(s.getRange(s.getLastRow(), 1).getValue()) : '';
     if (ultimo.indexOf(id) === 0) id += '-' + Math.floor(Math.random() * 90 + 10);
 
-    const it = DriveApp.getFoldersByName('Comprobantes');
-    const carpeta = it.hasNext() ? it.next() : DriveApp.createFolder('Comprobantes');
-    url = carpeta.createFile(Utilities.newBlob(Utilities.base64Decode(f.data), f.type, id + '_' + String(f.name).slice(0, 80))).getUrl();
+    url = '';
+    if (!ce) {
+      const it = DriveApp.getFoldersByName('Comprobantes');
+      const carpeta = it.hasNext() ? it.next() : DriveApp.createFolder('Comprobantes');
+      url = carpeta.createFile(Utilities.newBlob(Utilities.base64Decode(f.data), f.type, id + '_' + String(f.name).slice(0, 80))).getUrl();
+    }
 
     const fecha = ahora_();
     s.appendRow([
-      id, fecha, ESTADOS[0], detalle, subtotal, envio, subtotal + envio,
+      id, fecha, est[0], detalle, subtotal, envio, subtotal + envio,
       c('nombre'), c('cedula'), c('email'), c('telefono'), c('ciudad'), c('direccion'), c('barrio'), c('indicaciones'),
-      med ? ENTREGA_MED : ENTREGA_FUERA, url, false,
-      cantidad, fecha + ' · ' + ESTADOS[0], acepta
+      med ? ENTREGA_MED : ENTREGA_FUERA, ce ? PAGO_CE : url, false,
+      cantidad, fecha + ' · ' + est[0], acepta, ce ? PAGO_CE : PAGO_BREB
     ]);
     guardarCliente_(d, subtotal + envio, fecha, acepta);
     SpreadsheetApp.flush();
@@ -139,9 +154,9 @@ function crearPedido(d, f) {
     lock.releaseLock();
   }
 
-  const ped = { id: id, detalle: detalle, subtotal: subtotal, envio: envio, total: subtotal + envio, med: med, comprobante: url };
+  const ped = { id: id, detalle: detalle, subtotal: subtotal, envio: envio, total: subtotal + envio, med: med, comprobante: url, ce: ce };
   try { avisarNuevo_(ped, d); } catch (err) { console.error('No se pudo enviar el aviso: ' + err); }
-  try { if (AVISAR_CLIENTE) correoCliente_(String(d.email).trim(), d.nombre, id, ESTADOS[0], detalle, subtotal + envio); } catch (err) { console.error('No se pudo enviar el correo al cliente: ' + err); }
+  try { if (AVISAR_CLIENTE) correoCliente_(String(d.email).trim(), d.nombre, id, est[0], detalle, subtotal + envio); } catch (err) { console.error('No se pudo enviar el correo al cliente: ' + err); }
   return { id: id, repetido: false };
 }
 
@@ -175,9 +190,9 @@ function seguimiento(id, cedula) {
   const v = hoja_('Pedidos', COLS).getDataRange().getValues();
   const r = v.find((x, i) => i > 0 && String(x[0]).toUpperCase() === id && digitos_(x[8]) === ced);
   if (!r) { cache.put(k, String(intentos + 1), 600); throw new Error('No encontramos un pedido con ese número y esa cédula.'); }
-  const o = filaObj_(COLS, r), estado = ANTIGUOS[o.Estado] || o.Estado;
+  const o = filaObj_(COLS, r), estado = ANTIGUOS[o.Estado] || o.Estado, lista = estadosDe_(r);
   return {
-    id: o.ID, fecha: o.Fecha, estado: estado, paso: ESTADOS.indexOf(estado), estados: ESTADOS,
+    id: o.ID, fecha: o.Fecha, estado: estado, paso: lista.indexOf(estado), estados: lista, contraEntrega: lista === ESTADOS_CE,
     mensaje: MENSAJES[estado] || '', detalle: o.Libro, total: o.Total, entrega: o['Entrega'],
     historial: String(o.Historial || '').split('\n').filter(String)
   };
@@ -189,15 +204,16 @@ function avisarNuevo_(p, d) {
   MailApp.sendEmail({
     to: CORREO_AVISOS || Session.getEffectiveUser().getEmail(),
     replyTo: /^\S+@\S+\.\S+$/.test(email) ? email : undefined,
-    subject: 'Nuevo pedido ' + p.id + ' — ' + p.detalle.slice(0, 80),
-    body: 'Llegó un pedido nuevo (pago por verificar).\n\n' +
+    subject: (p.ce ? '[Contra entrega] ' : '') + 'Nuevo pedido ' + p.id + ' — ' + p.detalle.slice(0, 80),
+    body: (p.ce ? 'Llegó un pedido nuevo CONTRA ENTREGA: el cliente paga al recibir.\nConfírmalo por WhatsApp antes de comprar el libro en Amazon.\n\n' : 'Llegó un pedido nuevo (pago por verificar).\n\n') +
       'Pedido: ' + p.id + '\nLibros: ' + p.detalle + '\nSubtotal: ' + money_(p.subtotal) +
       '\nEnvío: ' + (p.envio ? money_(p.envio) : 'gratis') + '\nTotal: ' + money_(p.total) + '\n\n' +
       'Cliente: ' + d.nombre + ' (CC ' + d.cedula + ')\nTeléfono: ' + d.telefono + '\nCorreo: ' + email + '\n' +
       'Entrega: ' + (p.med ? ENTREGA_MED : ENTREGA_FUERA) + ' — ' + d.direccion + ', ' + (d.barrio || '') + ', ' + d.ciudad + '\n' +
       (d.indicaciones ? 'Indicaciones: ' + d.indicaciones + '\n' : '') +
-      'Acepta novedades: ' + (d.novedades ? 'sí' : 'no') + '\n\nComprobante: ' + p.comprobante +
-      '\n\nRevisa el pago en tu banco y avanza el pedido en el panel: ' + urlApp_() + '?admin=1'
+      'Acepta novedades: ' + (d.novedades ? 'sí' : 'no') + '\n\n' +
+      (p.ce ? 'Pago: contra entrega (cobrar ' + money_(p.total) + ' al entregar).' : 'Comprobante: ' + p.comprobante) +
+      '\n\n' + (p.ce ? 'Confirma el pedido' : 'Revisa el pago en tu banco') + ' y avanza el pedido en el panel: ' + urlApp_() + '?admin=1'
   });
 }
 
@@ -233,7 +249,7 @@ function ok_(tk) {
 function listar(tk) {
   ok_(tk);
   const pedidos = hoja_('Pedidos', COLS).getDataRange().getValues().slice(1).filter(r => r[0]).map(r => {
-    const o = filaObj_(COLS, r); o.Estado = ANTIGUOS[o.Estado] || o.Estado; return o;
+    const o = filaObj_(COLS, r); o.Estado = ANTIGUOS[o.Estado] || o.Estado; o._estados = estadosDe_(r); o['Forma de pago'] = o['Forma de pago'] || PAGO_BREB; return o;
   }).reverse();
   return { pedidos: pedidos, estados: ESTADOS, cancelado: CANCELADO, mensajes: MENSAJES, url: urlApp_(), tienda: NOMBRE_TIENDA };
 }
@@ -258,14 +274,16 @@ function actualizar(tk, id, campo, val) {
 // Avanza (o cambia) el estado, guarda la fecha en el historial y avisa al cliente por correo.
 function cambiarEstado(tk, id, estado, avisar) {
   ok_(tk);
-  if (ESTADOS.indexOf(estado) < 0 && estado !== CANCELADO) throw new Error('Estado no válido');
   const p = buscarPedido_(id);
+  const lista = estadosDe_(p.r);
+  if (lista.indexOf(estado) < 0 && estado !== CANCELADO) throw new Error('Estado no válido');
   const fecha = ahora_();
   const col = n => COLS.indexOf(n) + 1;
   p.s.getRange(p.fila, col('Estado')).setValue(estado);
   const hist = String(p.r[COLS.indexOf('Historial')] || '');
   p.s.getRange(p.fila, col('Historial')).setValue((hist ? hist + '\n' : '') + fecha + ' · ' + estado);
-  if (ESTADOS.indexOf(estado) >= 1) p.s.getRange(p.fila, col('Verificada')).setValue(true);
+  // "Verificada" = pago confirmado: con Bre-B desde "Pago verificado"; contra entrega, al quedar "Entregado y pagado".
+  if (lista === ESTADOS_CE ? estado === ESTADOS_CE[ESTADOS_CE.length - 1] : ESTADOS.indexOf(estado) >= 1) p.s.getRange(p.fila, col('Verificada')).setValue(true);
   let correo = false;
   if (avisar && AVISAR_CLIENTE) {
     try { correoCliente_(String(p.r[9]).trim(), p.r[7], id, estado, p.r[3], p.r[6]); correo = true; }
