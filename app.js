@@ -306,9 +306,12 @@
   // Pestaña Colombia: muestra TODOS los libros (de todos los idiomas) con el botón "Pedir en Colombia".
   // El libro se identifica en la app de pedidos por su ASIN (o por "ID Colombia" si lo llenas).
   function pintarColombia() {
-    const url = urlSegura(C.URL_COLOMBIA);
+    // Versión "contra entrega": la app de pedidos abre sin datos de pago (parámetro pago=ce).
+    const ce = CONTRA_ENTREGA, sufijo = ce ? '_ce' : '';
+    const base = urlSegura(C.URL_COLOMBIA);
+    const url = base && ce ? base + (base.includes('?') ? '&' : '?') + 'pago=ce' : base;
     const wa = String(C.WHATSAPP || '').replace(/\D/g, '');
-    const pasos = t('colombia_pasos').split(/\n+/).map(s => s.trim()).filter(Boolean);
+    const pasos = t('colombia_pasos' + sufijo).split(/\n+/).map(s => s.trim()).filter(Boolean);
     const items = LIBROS.slice().sort((a, b) => a.orden - b.orden || a.n - b.n);
     const pedido = id => url + (url.includes('?') ? '&' : '?') + 'libro=' + encodeURIComponent(id);
     const boton = ed => {
@@ -320,12 +323,12 @@
     $('#contenido').innerHTML = `
       <section class="box colombia">
         <h2>🇨🇴 ${esc(t('colombia_titulo'))}</h2>
-        ${parrafos(t('colombia_texto'))}
+        ${parrafos(t('colombia_texto' + sufijo))}
         ${pasos.length ? `<ol>${pasos.map(p => `<li>${esc(p)}</li>`).join('')}</ol>` : ''}
         <div class="acciones">
           ${url ? `<a class="btn grande" href="${esc(url)}" target="_blank" rel="noopener">${esc(t('colombia_boton'))}</a>`
                 : `<p class="nota">${esc(t('colombia_no_disponible'))}</p>`}
-          ${url ? `<a class="btn grande gr" href="${esc(url + (url.includes('?') ? '&' : '?') + 'seguimiento=1')}" target="_blank" rel="noopener">🔎 ${esc(t('colombia_seguimiento'))}</a>` : ''}
+          ${url ? `<a class="btn grande gr" href="${esc(base + (base.includes('?') ? '&' : '?') + 'seguimiento=1')}" target="_blank" rel="noopener">🔎 ${esc(t('colombia_seguimiento'))}</a>` : ''}
           ${wa ? `<a class="btn grande wa" href="https://wa.me/${wa}?text=${encodeURIComponent('Hola, quiero pedir un libro en Colombia.')}" target="_blank" rel="noopener">💬 ${esc(t('colombia_whatsapp'))}</a>` : ''}
         </div>
       </section>
@@ -346,12 +349,13 @@
     try { enCol = Intl.DateTimeFormat().resolvedOptions().timeZone === 'America/Bogota'; } catch (e) { /* nada */ }
     let cerrado = false; try { cerrado = sessionStorage.getItem('avisoCol') === '1'; } catch (e) { /* nada */ }
     if (!enCol || cerrado || actual === 'colombia') { el.hidden = true; return; }
-    el.innerHTML = `${esc(t('aviso_colombia', null, 'es'))} <button type="button" data-ir>${esc(t('aviso_colombia_boton', null, 'es'))}</button><button type="button" class="x" aria-label="Cerrar">×</button>`;
+    el.innerHTML = `${esc(t(CONTRA_ENTREGA ? 'aviso_colombia_ce' : 'aviso_colombia', null, 'es'))} <button type="button" data-ir>${esc(t('aviso_colombia_boton', null, 'es'))}</button><button type="button" class="x" aria-label="Cerrar">×</button>`;
     el.hidden = false;
   }
 
   // ---------- Navegación ----------
-  const CON_COLOMBIA = C.MOSTRAR_COLOMBIA !== false;   // false = versión del sitio sin la pestaña Colombia
+  const CON_COLOMBIA = C.MOSTRAR_COLOMBIA !== false;            // false = versión del sitio sin la pestaña Colombia
+  const CONTRA_ENTREGA = C.PAGO_COLOMBIA === 'contraentrega';  // true = versión con pago al recibir
   const valida = p => (p === 'colombia' && CON_COLOMBIA) || VISIBLES.some(i => i.codigo === p);
 
   // Idioma de los textos: el que eligió el visitante, o el de su navegador (entre los 6 idiomas).

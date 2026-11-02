@@ -23,11 +23,13 @@ Crea una hoja con **3 pestañas** con estos nombres exactos (puedes importar los
 - Cada libro tiene además **"Otras tiendas Amazon"**, con las 14 tiendas que muestra KDP en "Ver en Amazon": US, UK, DE, FR, ES, IT, NL, PL, SE, BE, IE, JP, CA, AU.
 
 
-### Dos versiones del sitio (mismos libros, mismos textos)
+### Tres versiones del sitio (mismos libros, mismos textos)
 - **Principal (con pestaña Colombia):** `https://proyectosedwinzr-glitch.github.io/libros-sitio-web./`
 - **Internacional (sin pestaña Colombia):** `https://proyectosedwinzr-glitch.github.io/libros-sitio-web./internacional.html`
 
 Las dos usan los mismos datos y el mismo código: un libro o un texto nuevo aparece en ambas. La única diferencia es la línea `MOSTRAR_COLOMBIA = false` dentro de `internacional.html`.
+- **Contra entrega (pestaña Colombia con pago al recibir):** `https://proyectosedwinzr-glitch.github.io/libros-sitio-web./contraentrega.html`
+  Abre la app de pedidos con `?pago=ce`: sin datos Bre-B ni comprobante. Pasos: Pedido recibido → Pedido confirmado (confírmalo por WhatsApp antes de comprar en Amazon) → Pedido en Amazon → Recibido de Amazon → Listo para entrega → Entregado y pagado. En el panel, esos pedidos aparecen marcados con "💵 Contra entrega" y el valor a cobrar.
 
 ### Pestaña `Idiomas` (una fila por pestaña del sitio)
 | Código | Nombre | Mostrar libros de | Activo |

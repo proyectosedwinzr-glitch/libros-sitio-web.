@@ -20,13 +20,19 @@ ver_menos,Ver menos,Show less,閉じる,Réduire,Weniger,Mostra meno
 sin_libros,Pronto habrá libros aquí.,Books coming soon.,まもなく公開します。,Des livres arrivent bientôt.,Bald gibt es hier Bücher.,Presto qui ci saranno dei libri.
 pie,© {anio} {autor} · Memini Zar. Los botones te llevan a Amazon.,© {anio} {autor} · Memini Zar. Buttons take you to Amazon.,© {anio} {autor} · Memini Zar。ボタンからAmazonへ移動します。,© {anio} {autor} · Memini Zar. Les boutons mènent à Amazon.,© {anio} {autor} · Memini Zar. Die Schaltflächen führen zu Amazon.,© {anio} {autor} · Memini Zar. I pulsanti portano ad Amazon.
 aviso_colombia,¿Estás en Colombia? Pide aquí tus libros y paga por Bre-B.,,,,,
+aviso_colombia_ce,¿Estás en Colombia? Pide aquí tus libros y paga al recibirlos.,,,,,
 aviso_colombia_boton,Ir a Colombia,,,,,
 colombia_titulo,Pedidos en Colombia,,,,,
 colombia_texto,"En Colombia vendemos bajo pedido: escoges tus libros, haces el pedido y pagas por Bre-B. Nosotros compramos tu libro en Amazon y te lo hacemos llegar a la dirección que selecciones. Envío gratis en Medellín y el área metropolitana; al resto de Colombia, $15.000.",,,,,
+colombia_texto_ce,"En Colombia vendemos bajo pedido y pagas al recibir: escoges tus libros y haces el pedido; te escribimos por WhatsApp para confirmarlo, compramos tu libro en Amazon y te lo llevamos a la dirección que selecciones. Envío gratis en Medellín y el área metropolitana; al resto de Colombia, $15.000.",,,,,
 colombia_pasos,"Escoge tus libros: puedes pedir varios títulos y varios ejemplares.
 Haz el pedido, paga por Bre-B y adjunta el comprobante.
 Verificamos tu pago y compramos tu libro en Amazon.
 Te avisamos en cada paso hasta que tu pedido llegue a tu dirección.",,,,,
+colombia_pasos_ce,"Escoge tus libros: puedes pedir varios títulos y varios ejemplares.
+Haz el pedido con tus datos y tu dirección.
+Te escribimos por WhatsApp para confirmarlo y compramos tu libro en Amazon.
+Pagas cuando recibes tu pedido en tu dirección.",,,,,
 colombia_boton,Hacer mi pedido,,,,,
 colombia_pedir,Pedir en Colombia,,,,,
 colombia_whatsapp,Escribir por WhatsApp,,,,,

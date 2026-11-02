@@ -75,11 +75,14 @@ table.t td,table.t th{border:1px solid #ccc;padding:6px;vertical-align:top;text-
 
     <div class="box" style="background:var(--g);margin-top:14px">
       <div id="resumen"></div>
-      <p>Paga por <b>Bre-B</b> a la llave <b id="llave"></b><br>Titular: <b id="titular"></b></p>
+      <p id="pagoBreb">Paga por <b>Bre-B</b> a la llave <b id="llave"></b><br>Titular: <b id="titular"></b></p>
+      <p id="pagoCe" style="display:none">💵 <b>Pago contra entrega:</b> no pagas nada ahora. Te escribiremos por WhatsApp para confirmar tu pedido y pagas cuando lo recibas en tu dirección.</p>
       <a class="btn wa" id="wa" target="_blank">💬 Escribir por WhatsApp</a>
     </div>
+    <div id="bloqueComp">
     <label>Comprobante de pago (imagen o PDF, máx. 5 MB) *</label>
     <input type="file" id="comp" accept="image/*,.pdf" required>
+    </div>
 
     <label class="chk"><input type="checkbox" id="autoriza" required> <span>Autorizo el tratamiento de mis datos personales para gestionar mi pedido y su entrega (Ley 1581 de 2012). *</span></label>
     <label class="chk"><input type="checkbox" id="novedades"> <span>Quiero recibir correos sobre nuevos libros y novedades. Puedo darme de baja cuando quiera.</span></label>
@@ -116,7 +119,7 @@ table.t td,table.t th{border:1px solid #ccc;padding:6px;vertical-align:top;text-
       <p class="no">
         <select id="filtro" style="width:auto" onchange="tabla()">
           <option value="curso">En curso</option><option value="todos">Todos</option>
-          <option value="Entregado">Entregados</option><option value="Cancelado">Cancelados</option>
+          <option value="Entregado">Entregados</option><option value="Cancelado">Cancelados</option><option value="ce">Solo contra entrega</option>
         </select>
         <label class="n" style="display:inline"><input type="checkbox" id="avisar" checked> Avisar al cliente por correo al cambiar el estado</label>
       </p>
@@ -146,6 +149,7 @@ table.t td,table.t th{border:1px solid #ccc;padding:6px;vertical-align:top;text-
 const MODO = '<?!= modo ?>';
 const LIBRO = '<?!= libro ?>';     // libro que llega desde el sitio público (?libro=ASIN)
 const PEDIDO = '<?!= pedido ?>';   // pedido que llega desde el correo (?pedido=ID)
+const CE = '<?!= pago ?>' === 'ce';  // true = pedido contra entrega (?pago=ce): sin datos de pago ni comprobante
 let D, R = [], CL = [], TK = '', META = {};
 const CARRO = {};                  // { idLibro: cantidad }
 const $ = s => document.querySelector(s);
@@ -160,7 +164,7 @@ if (MODO === 'seguimiento' && PEDIDO) $('#sId').value = PEDIDO;
 
 function urlBase() { return location.href.split('?')[0]; }
 function inicio() {
-  if (D.sitio) { ver('#volver', true); $('#volver').href = D.sitio; }
+  if (D.sitio) { ver('#volver', true); $('#volver').href = CE ? D.sitio.replace(/\/?$/, '/') + 'contraentrega.html' : D.sitio; }
   ver('#sepSeg', !!D.sitio);
   // Enlace de seguimiento: se arma con la URL pública de la app
   google.script.run.withSuccessHandler(u => { if (u) { ver('#linkSeg', true); $('#linkSeg').href = u + '?seguimiento=1'; } else ver('#sepSeg', false); }).withFailureHandler(() => ver('#sepSeg', false)).urlPublica();
@@ -173,6 +177,10 @@ function inicio() {
     <div class="acc"><button onclick="agregar('${esc(l.id)}')">➕ Agregar</button>
     ${l.amazon ? `<a class="btn gr" href="${esc(l.amazon)}" target="_blank">Ver en Amazon</a>` : ''}</div></div>`).join('');
   $('#llave').textContent = D.breb.llave; $('#titular').textContent = D.breb.titular;
+  if (CE) {
+    ver('#pagoBreb', false); ver('#pagoCe', true); ver('#bloqueComp', false); $('#comp').required = false;
+    $('.lema').textContent = 'Escoge tus libros y haz el pedido. Pagas al recibir: nosotros compramos tu libro y lo llevamos a la dirección que selecciones.';
+  }
   if (LIBRO && D.libros.some(l => l.id === LIBRO)) { CARRO[LIBRO] = 1; setTimeout(() => $('#tuPedido').scrollIntoView({behavior:'smooth'}), 300); }
   tot();
 }
@@ -190,7 +198,7 @@ function tot() {
     : '<p class="vacio">Tu pedido está vacío. Pulsa "➕ Agregar" en los libros que quieras (puedes pedir varios y varios ejemplares).</p>';
   const sub = it.reduce((a, x) => a + x.l.precio * x.cant, 0);
   const med = $('#eMed').checked, env = med ? D.envioMed : D.envioFuera;
-  $('#resumen').innerHTML = it.length ? `Subtotal: <b>${money(sub)}</b><br>Envío: <b>${env ? money(env) : 'GRATIS'}</b><br><b>Total a pagar:</b> <span class="tot">${money(sub + env)}</span>`
+  $('#resumen').innerHTML = it.length ? `Subtotal: <b>${money(sub)}</b><br>Envío: <b>${env ? money(env) : 'GRATIS'}</b><br><b>${CE ? 'Total a pagar al recibir' : 'Total a pagar'}:</b> <span class="tot">${money(sub + env)}</span>`
     : '<b>Total a pagar:</b> <span class="tot">$0</span>';
   const txt = it.map(x => x.cant + ' × ' + x.l.titulo).join(', ');
   $('#wa').href = 'https://wa.me/' + D.whatsapp + '?text=' + encodeURIComponent(it.length ? 'Hola, quiero pedir: ' + txt + '. Total: ' + money(sub + env) : 'Hola, quiero hacer un pedido.');
@@ -201,26 +209,29 @@ $('#f').onsubmit = e => {
   if ($('#envia').disabled) return;              // evita doble clic
   const it = items();
   if (!it.length) return alert('Agrega al menos un libro a tu pedido.');
-  const file = $('#comp').files[0];
-  if (!file || file.size > 5e6) return alert('Adjunta un comprobante de máximo 5 MB.');
+  const file = CE ? null : $('#comp').files[0];
+  if (!CE && (!file || file.size > 5e6)) return alert('Adjunta un comprobante de máximo 5 MB.');
   if (!$('#autoriza').checked) return alert('Debes autorizar el tratamiento de tus datos para hacer el pedido.');
   const d = Object.fromEntries(new FormData($('#f')));
   d.entrega = $('#eMed').checked ? D.entregaMed : D.entregaFuera;
   d.items = it.map(x => ({ id: x.l.id, cant: x.cant }));
   d.autorizaDatos = true; d.novedades = $('#novedades').checked;
+  if (CE) d.pago = 'ce';
   $('#envia').disabled = true; $('#envia').textContent = 'Enviando…';
-  const r = new FileReader();
-  r.onload = () => google.script.run
+  const enviar = archivo => google.script.run
     .withSuccessHandler(res => {
       ver('#f', false); ver('#ok', true);
       const seg = $('#linkSeg').href ? `<p><a class="btn bl" href="${esc($('#linkSeg').href.replace('seguimiento=1', 'pedido=' + encodeURIComponent(res.id)))}">🔎 Ver el estado de mi pedido</a></p>` : '';
       $('#ok').innerHTML = res.repetido
         ? `<h2>ℹ️ Ya teníamos tu pedido</h2><p>Hace poco recibimos un pedido igual. Su número es <b>${esc(res.id)}</b>; no hace falta enviarlo otra vez.</p>${seg}`
-        : `<h2>✅ ¡Pedido recibido!</h2><p>Número: <b>${esc(res.id)}</b>. Guárdalo para consultar tu pedido.</p><p>Vamos a verificar tu pago y te avisaremos por correo y WhatsApp en cada paso: pago verificado, pedido en Amazon, recibido, listo para entrega y entregado.</p>${seg}`;
+        : `<h2>✅ ¡Pedido recibido!</h2><p>Número: <b>${esc(res.id)}</b>. Guárdalo para consultar tu pedido.</p>${CE ? '<p>Te escribiremos por WhatsApp para <b>confirmar tu pedido</b>. No pagas nada ahora: <b>pagas cuando lo recibas</b> en tu dirección. Te avisaremos por correo y WhatsApp en cada paso: pedido confirmado, pedido en Amazon, recibido, listo para entrega y entregado.</p>' : '<p>Vamos a verificar tu pago y te avisaremos por correo y WhatsApp en cada paso: pago verificado, pedido en Amazon, recibido, listo para entrega y entregado.</p>'}${seg}`;
       $('#ok').scrollIntoView({behavior:'smooth'});
     })
     .withFailureHandler(er => { alert(er.message); $('#envia').disabled = false; $('#envia').textContent = 'Enviar pedido'; })
-    .crearPedido(d, { name: file.name, type: file.type, data: r.result.split(',')[1] });
+    .crearPedido(d, archivo);
+  if (CE) return enviar(null);
+  const r = new FileReader();
+  r.onload = () => enviar({ name: file.name, type: file.type, data: r.result.split(',')[1] });
   r.readAsDataURL(file);
 };
 
@@ -264,31 +275,33 @@ function cargar() {
     META = r; R = r.pedidos; ver('#login', false); ver('#panel', true); tabla();
   }).withFailureHandler(fallo).listar(TK);
 }
-function claseEstado(e) { return e === 'Cancelado' ? 'ecan' : e === 'Entregado' ? 'eok' : e === META.estados[0] ? 'e0' : 'emid'; }
+function claseEstado(e, est) { return e === 'Cancelado' ? 'ecan' : e === est[est.length - 1] ? 'eok' : e === est[0] ? 'e0' : 'emid'; }
+const terminado = e => e === 'Cancelado' || /^Entregado/.test(e);
 function telWa(t) { let n = String(t || '').replace(/\D/g, ''); if (n.length === 10 && n[0] === '3') n = '57' + n; return n; }
 function tabla() {
   const f = $('#filtro').value;
-  const lista = R.filter(r => f === 'todos' ? true : f === 'curso' ? !['Entregado', 'Cancelado'].includes(r.Estado) : r.Estado === f);
+  const lista = R.filter(r => f === 'todos' ? true : f === 'curso' ? !terminado(r.Estado) : f === 'Entregado' ? /^Entregado/.test(r.Estado) : f === 'ce' ? r['Forma de pago'] === 'Contra entrega' : r.Estado === f);
   $('#tb').innerHTML = '<tr><th>Estado</th><th>Pedido</th><th>Cliente</th><th>Entrega</th><th>Total</th><th>Envío</th><th>Pago</th></tr>' +
   (lista.length ? '' : '<tr><td colspan="7" class="vacio">No hay pedidos en esta lista.</td></tr>') +
   lista.map(r => {
-    const i = META.estados.indexOf(r.Estado), sig = i >= 0 && i < META.estados.length - 1 ? META.estados[i + 1] : '';
+    const est = r._estados || META.estados, ce = r['Forma de pago'] === 'Contra entrega';
+    const i = est.indexOf(r.Estado), sig = i >= 0 && i < est.length - 1 ? est[i + 1] : '';
     const msg = 'Hola ' + String(r.Nombre).split(' ')[0] + ', te escribimos de ' + META.tienda + '. Tu pedido ' + r.ID + ' (' + r.Libro + '): ' +
       (META.mensajes[r.Estado] || r.Estado) + (META.url ? ' Consulta tu pedido: ' + META.url + '?pedido=' + r.ID : '');
     return `<tr>
-    <td><span class="${claseEstado(r.Estado)}">${esc(r.Estado)}</span>
+    <td><span class="${claseEstado(r.Estado, est)}">${esc(r.Estado)}</span>
       ${sig ? `<br><button class="mini no" onclick="estado('${esc(r.ID)}','${esc(sig)}')">Pasar a: ${esc(sig)}</button>` : ''}
       <br><select class="no" style="width:auto;font-size:12px;padding:3px;margin-top:4px" onchange="if(this.value)estado('${esc(r.ID)}',this.value)">
-        <option value="">Otro estado…</option>${META.estados.concat(META.cancelado).filter(e => e !== r.Estado).map(e => `<option>${esc(e)}</option>`).join('')}</select>
+        <option value="">Otro estado…</option>${est.concat(META.cancelado).filter(e => e !== r.Estado).map(e => `<option>${esc(e)}</option>`).join('')}</select>
       <div class="hist">${esc(r.Historial || '')}</div></td>
-    <td>${esc(r.ID)}<br>${esc(r.Fecha)}<br><b>${esc(r.Libro)}</b></td>
+    <td>${esc(r.ID)}<br>${esc(r.Fecha)}<br><b>${esc(r.Libro)}</b><br>${ce ? '<span class="e0">💵 Contra entrega</span>' : '<span class="nota">Bre-B</span>'}</td>
     <td>${esc(r.Nombre)}<br>CC ${esc(r['Cédula'])}<br>${esc(r['Teléfono'])}<br>${esc(r.Email)}
       ${r['Acepta novedades'] === true ? '<br>✉️ acepta novedades' : ''}
       <br><a class="btn wa mini no" target="_blank" href="https://wa.me/${telWa(r['Teléfono'])}?text=${encodeURIComponent(msg)}">💬 Avisar por WhatsApp</a></td>
     <td>${esc(r.Entrega)}<br>${esc(r['Dirección'])}, ${esc(r.Barrio)}<br>${esc(r.Ciudad)}<br><i>${esc(r.Indicaciones)}</i></td>
     <td>${money(r.Total)}</td>
     <td><input style="width:80px" value="${esc(r['Envío'])}" onchange="set('${esc(r.ID)}','Envío',this.value)"></td>
-    <td><a class="no" href="${esc(r.Comprobante)}" target="_blank">Ver comprobante</a><br>${r.Verificada === true ? '<span class="eok">✔ verificado</span>' : ''}</td></tr>`; }).join('');
+    <td>${ce ? `Cobrar al entregar:<br><b>${money(r.Total)}</b>` : `<a class="no" href="${esc(r.Comprobante)}" target="_blank">Ver comprobante</a>`}<br>${r.Verificada === true ? '<span class="eok">✔ pagado</span>' : ''}</td></tr>`; }).join('');
 }
 function estado(id, e) {
   if (!confirm('¿Cambiar el pedido ' + id + ' a "' + e + '"?')) return tabla();
