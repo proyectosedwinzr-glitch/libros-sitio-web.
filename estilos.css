@@ -7,6 +7,12 @@ body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Sans","Noto
 .idioma select:disabled{opacity:.6}
 .top h1{margin:0;font-size:clamp(22px,5vw,32px)}
 .top p{margin:6px auto 0;max-width:640px;opacity:.92}
+.destacado{font-size:clamp(16px,3.4vw,19px);font-weight:600;max-width:760px;margin:12px auto 0 !important;opacity:1 !important}
+.vitrina{display:flex;gap:12px;justify-content:center;overflow-x:auto;padding:16px 4px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.vitrina::-webkit-scrollbar{display:none}
+.vitrina a{flex:0 0 auto;transition:transform .2s}
+.vitrina a:hover{transform:translateY(-6px) rotate(-1deg)}
+.vitrina img{height:150px;aspect-ratio:2/3;object-fit:cover;border-radius:6px;box-shadow:0 6px 16px #0006;display:block}
 .top .subtit{margin-top:2px;font-size:clamp(15px,3.6vw,19px);color:#f5c542;opacity:1;font-weight:bold}
 
 /* Pestañas: se desplazan de lado en el celular */
@@ -73,6 +79,8 @@ footer{text-align:center;color:var(--suave);font-size:13px;padding:24px 16px 40p
   .card .portada{max-width:230px;margin:0 auto}
   .pestanas a.col{margin-left:0}
   .idioma{position:static;display:block;margin-bottom:8px}
+  .vitrina{justify-content:flex-start}
+  .vitrina img{height:110px}
 }
 
 /* Selector de país y tiendas */

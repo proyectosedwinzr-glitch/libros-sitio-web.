@@ -22,7 +22,7 @@
     aviso_colombia: '¿Estás en Colombia? Pide aquí tus libros y paga por Bre-B.', colombia_seguimiento: 'Consultar mi pedido', aviso_colombia_boton: 'Ir a Colombia'
   };
 
-  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}'; DEF.pais_nota = '¿Tu país no está en la lista? Elige «{pais}» para comprar en Amazon.com, que envía a muchos países.'; DEF.pais_info = 'Los botones de cada libro te llevan directamente a la página de compra en la tienda Amazon que elijas.'; DEF.libros_idioma = 'Idioma de los libros:'; DEF.idioma_pagina = 'Idioma de la página';
+  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}'; DEF.destacado = ''; DEF.pais_nota = '¿Tu país no está en la lista? Elige «{pais}» para comprar en Amazon.com, que envía a muchos países.'; DEF.pais_info = 'Los botones de cada libro te llevan directamente a la página de compra en la tienda Amazon que elijas.'; DEF.libros_idioma = 'Idioma de los libros:'; DEF.idioma_pagina = 'Idioma de la página';
 
   // Tiendas de Amazon por país (código ISO). Las 14 primeras son las de libros de tapa blanda en KDP.
   const TIENDAS = {
@@ -278,12 +278,23 @@
     </article>`;
   }
 
+  // Portada principal: fila de portadas; cada una abre su libro en su pestaña de idioma.
+  function vitrina() {
+    const el = $('#vitrina'); if (!el) return;
+    const libros = LIBROS.filter(b => urlPortada(b.portada) && VISIBLES.some(i => i.codigo === b.idioma))
+      .sort((a, b) => a.orden - b.orden || a.n - b.n);
+    el.innerHTML = libros.map(b => `<a href="#${esc(b.idioma)}/${esc(slug(b.grupo))}" title="${esc(b.titulo)}">
+      <img src="${esc(urlPortada(b.portada))}" alt="${esc(b.titulo)}" loading="lazy"></a>`).join('');
+    el.hidden = !libros.length;
+  }
+
   function cabecera() {
     document.documentElement.lang = actual === 'colombia' ? 'es-CO' : UI;
     const sel = $('#idioma'); if (sel) { sel.value = UI; sel.disabled = actual === 'colombia'; }
     $('#titulo').textContent = t('titulo_sitio');
     $('#subtitulo').textContent = t('subtitulo_sitio'); $('#subtitulo').hidden = !t('subtitulo_sitio');
     $('#lema').textContent = t('lema');
+    $('#destacado').textContent = t('destacado');
     document.title = t('titulo_sitio') + (actual === 'colombia' ? ' · Colombia' : '');
     const m = document.querySelector('meta[name=description]'); if (m && t('lema')) m.content = t('lema');
     $('#pie').textContent = t('pie');
@@ -423,6 +434,7 @@
     PAIS = detectarPais();
     UI = detectarUI();
     $('#idioma').innerHTML = IDIOMAS.map(i => `<option value="${esc(i.codigo)}" lang="${esc(i.codigo)}">${esc(i.nombre)}</option>`).join('');
+    vitrina();
     $('#pestanas').innerHTML = `<span class="etq-pest" id="etqPest"></span>` + VISIBLES.map(i =>
       `<a href="#${esc(i.codigo)}" data-p="${esc(i.codigo)}" lang="${esc(i.codigo)}">${esc(i.nombre)}</a>`).join('') +
       (CON_COLOMBIA ? `<a href="#colombia" data-p="colombia" class="col">${bandera('CO')} Colombia</a>` : '');
