@@ -355,7 +355,9 @@
 
   function aviso() {
     const el = $('#aviso');
-    if (!CON_COLOMBIA) { el.hidden = true; return; }
+    // El aviso solo aparece si config.js tiene AVISO_COLOMBIA: true (por defecto está apagado:
+    // quien está en Colombia usa el botón "Colombia" de las pestañas).
+    if (!CON_COLOMBIA || C.AVISO_COLOMBIA !== true) { el.hidden = true; return; }
     let enCol = false;
     try { enCol = Intl.DateTimeFormat().resolvedOptions().timeZone === 'America/Bogota'; } catch (e) { /* nada */ }
     let cerrado = false; try { cerrado = sessionStorage.getItem('avisoCol') === '1'; } catch (e) { /* nada */ }
