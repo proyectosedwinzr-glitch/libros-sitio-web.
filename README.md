@@ -10,6 +10,11 @@ El sitio tiene **dos partes**:
 
 ---
 
+
+## Dónde está publicado el sitio
+- **Principal:** https://libros-edwin-zar.pages.dev/ (Cloudflare Pages). Cada vez que se aprueba un cambio en `main`, Cloudflare lo publica solo en 1–2 minutos.
+- La copia antigua en GitHub Pages (`proyectosedwinzr-glitch.github.io/libros-sitio-web./`) sigue funcionando mientras se mantenga activa.
+
 ## 1. La hoja de Google Sheets del catálogo (pública)
 
 > ⚠️ Usa una hoja **NUEVA y distinta** a la de pedidos. La del catálogo será visible para cualquiera; la de pedidos tiene datos personales de tus clientes y **nunca** debe compartirse.
@@ -24,11 +29,11 @@ Crea una hoja con **3 pestañas** con estos nombres exactos (puedes importar los
 
 
 ### Tres versiones del sitio (mismos libros, mismos textos)
-- **Principal (con pestaña Colombia):** `https://proyectosedwinzr-glitch.github.io/libros-sitio-web./`
-- **Internacional (sin pestaña Colombia):** `https://proyectosedwinzr-glitch.github.io/libros-sitio-web./internacional.html`
+- **Principal (con pestaña Colombia):** `https://libros-edwin-zar.pages.dev/`
+- **Internacional (sin pestaña Colombia):** `https://libros-edwin-zar.pages.dev/internacional.html`
 
 Las dos usan los mismos datos y el mismo código: un libro o un texto nuevo aparece en ambas. La única diferencia es la línea `MOSTRAR_COLOMBIA = false` dentro de `internacional.html`.
-- **Contra entrega (pestaña Colombia con pago al recibir):** `https://proyectosedwinzr-glitch.github.io/libros-sitio-web./contraentrega.html`
+- **Contra entrega (pestaña Colombia con pago al recibir):** `https://libros-edwin-zar.pages.dev/contraentrega.html`
   Abre la app de pedidos con `?pago=ce`: sin datos Bre-B ni comprobante. Pasos: Pedido recibido → Pedido confirmado (confírmalo por WhatsApp antes de comprar en Amazon) → Pedido en Amazon → Recibido de Amazon → Listo para entrega → Entregado y pagado. En el panel, esos pedidos aparecen marcados con "💵 Contra entrega" y el valor a cobrar.
 
 ### Pestaña `Idiomas` (una fila por pestaña del sitio)
