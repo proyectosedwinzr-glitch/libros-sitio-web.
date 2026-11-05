@@ -90,6 +90,8 @@ footer{text-align:center;color:var(--suave);font-size:13px;padding:24px 16px 40p
 .pais label{font-size:18px;font-weight:bold;color:var(--c2);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pais select{font-size:18px;padding:9px 10px;border:2px solid var(--c);border-radius:8px;background:#fff;min-width:240px;max-width:100%;font-weight:normal}
 .pais-nota{margin:6px 0 0;font-size:15px;color:#444}
+.pais-co{margin:8px 0 0;font-size:15px;background:#fff8d6;border-radius:8px;padding:8px 10px}
+.pais-co a{color:var(--c);font-weight:bold}
 .pais-info{margin:10px 0 0;font-size:16px;font-weight:bold;color:var(--c2)}
 .titulo-libros{margin:6px 0 14px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
