@@ -22,7 +22,7 @@
     aviso_colombia: '¿Estás en Colombia? Pide aquí tus libros y paga por Bre-B.', colombia_seguimiento: 'Consultar mi pedido', aviso_colombia_boton: 'Ir a Colombia'
   };
 
-  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}'; DEF.destacado = ''; DEF.pais_nota = '¿Tu país no está en la lista? Elige «{pais}» para comprar en Amazon.com, que envía a muchos países.'; DEF.pais_info = 'Los botones de cada libro te llevan directamente a la página de compra en la tienda Amazon que elijas.'; DEF.libros_idioma = 'Idioma de los libros:'; DEF.idioma_pagina = 'Idioma de la página';
+  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}'; DEF.destacado = ''; DEF.pais_co_amazon = 'Para Colombia, los botones te llevan a Amazon.com, que envía a Colombia.'; DEF.pais_co_pedido = '¿Prefieres pedir con nosotros y pagar en pesos? Ve a la pestaña Colombia.'; DEF.pais_nota = '¿Tu país no está en la lista? Elige «{pais}» para comprar en Amazon.com, que envía a muchos países.'; DEF.pais_info = 'Los botones de cada libro te llevan directamente a la página de compra en la tienda Amazon que elijas.'; DEF.libros_idioma = 'Idioma de los libros:'; DEF.idioma_pagina = 'Idioma de la página';
 
   // Tiendas de Amazon por país (código ISO). Las 14 primeras son las de libros de tapa blanda en KDP.
   const TIENDAS = {
@@ -33,7 +33,10 @@
   const TAPA_BLANDA = ['US', 'GB', 'DE', 'FR', 'ES', 'IT', 'NL', 'PL', 'SE', 'BE', 'IE', 'JP', 'CA', 'AU'];
   // Países sin tienda propia → tienda más cercana.
   const CERCANA = { UK: 'GB', AT: 'DE', CH: 'DE', LI: 'DE', LU: 'FR', MC: 'FR', PT: 'ES', AD: 'ES', SM: 'IT', VA: 'IT', NZ: 'AU', DK: 'SE', NO: 'SE', FI: 'SE' };
-  const codigoPais = c => { c = String(c || '').trim().toUpperCase(); c = CERCANA[c] || c; return TIENDAS[c] ? c : ''; };
+  // Países que aparecen en la lista sin tener tienda Amazon propia: compran en la tienda indicada.
+  const SIN_TIENDA = { CO: 'US' };
+  const tiendaDe = c => SIN_TIENDA[c] || c;
+  const codigoPais = c => { c = String(c || '').trim().toUpperCase(); c = CERCANA[c] || c; return TIENDAS[c] || SIN_TIENDA[c] ? c : ''; };
   const codigoDeDominio = d => Object.keys(TIENDAS).find(k => TIENDAS[k] === String(d).replace(/^www\./, '')) || '';
   const etiquetaPais = c => (c === 'GB' ? 'UK' : c);
   // Windows no dibuja banderas (muestra letras sueltas): ahí no las usamos.
@@ -193,7 +196,7 @@
     const am = String(b.asin || '').match(/(?:\/dp\/|\/gp\/product\/)?([A-Z0-9]{10})(?![A-Z0-9])/i);
     if (am) {
       const asin = am[1].toUpperCase();
-      const lst = lista(b.tiendas).map(codigoPais).filter(Boolean);
+      const lst = lista(b.tiendas).map(codigoPais).filter(c => TIENDAS[c]);
       (lst.length ? lst : TAPA_BLANDA).forEach(c => { m[c] = 'https://www.' + TIENDAS[c] + '/dp/' + asin; });
     }
     Object.entries(b.tiendas_col || {}).forEach(([d, u]) => { const c = codigoDeDominio(d); if (c && urlSegura(u)) m[c] = u; });
@@ -203,9 +206,10 @@
   function enlaces(ed) {
     const m = ed.enlaces, codigos = Object.keys(m);
     if (!codigos.length) return { principal: null, todas: [] };
-    const principal = m[PAIS] ? PAIS : (m.US ? 'US' : codigos[0]);
+    const st = tiendaDe(PAIS);
+    const principal = m[st] ? st : (m.US ? 'US' : codigos[0]);
     const todas = TAPA_BLANDA.concat(Object.keys(TIENDAS).filter(c => !TAPA_BLANDA.includes(c))).filter(c => m[c]);
-    return { principal, url: m[principal], todas, enSuPais: principal === PAIS };
+    return { principal, url: m[principal], todas, enSuPais: principal === st };
   }
 
   function nombrePais(c, en) {
@@ -232,11 +236,12 @@
 
   function selectorPais() {
     const usados = new Set(); LIBROS.forEach(b => Object.keys(b.enlaces).forEach(c => usados.add(c)));
-    TAPA_BLANDA.forEach(c => usados.add(c)); usados.add(PAIS);
+    TAPA_BLANDA.forEach(c => usados.add(c)); Object.keys(SIN_TIENDA).forEach(c => usados.add(c)); usados.add(PAIS);
     const ops = [...usados].map(c => [c, nombrePais(c, UI)]).sort((a, b) => a[1].localeCompare(b[1], UI));
     return `<div class="pais"><label><span>🌍 ${esc(t('comprar_desde'))}</span>
       <select id="pais">${ops.map(([c, n]) => `<option value="${c}"${c === PAIS ? ' selected' : ''}>${bandera(c)} ${esc(n)}</option>`).join('')}</select></label>
       <p class="pais-info">🛒 ${esc(t('pais_info'))}</p>
+      ${PAIS === 'CO' ? `<p class="pais-co">🇨🇴 ${esc(t('pais_co_amazon'))}${CON_COLOMBIA ? ` <a href="#colombia">${esc(t('pais_co_pedido'))}</a>` : ''}</p>` : ''}
       <p class="pais-nota">${esc(t('pais_nota', { pais: nombrePais('US', UI) }))}</p></div>`;
   }
 
@@ -255,7 +260,7 @@
     const larga = (ed.descripcion || '').length > 260;
     let compra;
     if (e.principal) {
-      compra = (e.enSuPais ? '' : `<p class="nota">${esc(t('no_en_tienda', { tienda: nombreTienda(TIENDAS[PAIS]) }))}</p>`) +
+      compra = (e.enSuPais ? '' : `<p class="nota">${esc(t('no_en_tienda', { tienda: nombreTienda(TIENDAS[tiendaDe(PAIS)]) }))}</p>`) +
         `<a class="btn amz" href="${esc(urlSegura(e.url))}" target="_blank" rel="noopener">${esc(t('comprar', { tienda: nombreTienda(TIENDAS[e.principal]) }))}</a>` +
         (e.todas.length > 1 ? `<details><summary>${esc(t('otras_tiendas'))}</summary><div class="chips">${e.todas.map(c =>
           `<a href="${esc(urlSegura(ed.enlaces[c]))}" target="_blank" rel="noopener" title="${esc(nombrePais(c, UI))} · ${esc(nombreTienda(TIENDAS[c]))}"${c === e.principal ? ' class="on"' : ''}>${bandera(c)} ${etiquetaPais(c)}</a>`).join('')}</div></details>` : '');
