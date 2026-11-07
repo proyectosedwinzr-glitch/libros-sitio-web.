@@ -15,6 +15,20 @@ El sitio tiene **dos partes**:
 - **Principal:** https://libros-edwin-zar.pages.dev/ (Cloudflare Pages). Cada vez que se aprueba un cambio en `main`, Cloudflare lo publica solo en 1–2 minutos.
 - La copia antigua en GitHub Pages (`proyectosedwinzr-glitch.github.io/libros-sitio-web./`) sigue funcionando mientras se mantenga activa.
 
+
+## Cómo actualizar el catálogo (nota corta)
+1. **Libros de Amazon:** se agrega o cambia una fila en `datos/catalogo.csv` (título, idioma, ASIN, portada en `portadas/`, descripción).
+2. **Productos de Hotmart:** se edita `datos/hotmart.csv`. Mientras **Enlace Hotmart** esté vacío, el producto sale como «Próximamente»; al pegar el enlace aparece el botón «Ver en Hotmart». **Mostrar hasta** (AAAA-MM-DD) lo oculta solo después de esa fecha (el bono de Navidad: 2027-01-06).
+3. **Textos del sitio (6 idiomas):** `datos/textos.csv`.
+4. Se aprueba el cambio en GitHub. **Cloudflare Pages ejecuta `python3 herramientas/construir.py`** y publica en 1–2 minutos:
+   - `/` , `/internacional.html`, `/contraentrega.html` con el catálogo escrito en el HTML;
+   - una página por idioma de los libros: `/es/`, `/en/`, `/fr/`, `/it/` (con `hreflang`, `canonical` y `og:`). Si aparece un libro en un idioma nuevo (por ejemplo `de`), su página `/de/` se crea sola.
+5. **Código QR de los libros impresos:** apunta a `https://libros-edwin-zar.pages.dev/qr` (archivos en `imagenes/qr/`). El destino se cambia en `_redirects`, sin reimprimir.
+
+Prueba sin navegador: `curl -s https://libros-edwin-zar.pages.dev/fr/ | grep "Lettres et histoires"` debe mostrar el título.
+
+**Configuración de Cloudflare Pages** (una sola vez): *Settings → Builds → Build configuration*: **Build command** `python3 herramientas/construir.py`, **Build output directory** `/` (vacío). Si la construcción fallara, Cloudflare mantiene publicada la versión anterior.
+
 ## 1. La hoja de Google Sheets del catálogo (pública)
 
 > ⚠️ Usa una hoja **NUEVA y distinta** a la de pedidos. La del catálogo será visible para cualquiera; la de pedidos tiene datos personales de tus clientes y **nunca** debe compartirse.

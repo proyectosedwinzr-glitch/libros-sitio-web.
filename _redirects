@@ -1,0 +1,4 @@
+# Dirección fija del código QR impreso en los libros.
+# 302 = temporal: el destino se puede cambiar aquí sin reimprimir nada.
+/qr   /internacional.html 302
+/qr/  /internacional.html 302

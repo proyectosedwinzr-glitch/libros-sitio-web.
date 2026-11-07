@@ -4,6 +4,10 @@
 (function () {
   'use strict';
   const C = window.CONFIG || {};
+  // Carpeta raíz del sitio (donde está app.js). Permite que las páginas /es/, /en/… usen los mismos datos.
+  const RAIZ = (document.currentScript && document.currentScript.src || '').replace(/app\.js(\?.*)?$/, '');
+  const IDIOMA_PAGINA = C.IDIOMA_PAGINA || '';      // lo ponen las páginas /es/, /en/, /fr/, /it/
+  const CON_HOTMART = C.MOSTRAR_HOTMART !== false;  // false = sin la sección de Hotmart (por ejemplo, la página del QR)
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -22,7 +26,7 @@
     aviso_colombia: '¿Estás en Colombia? Pide aquí tus libros y paga por Bre-B.', colombia_seguimiento: 'Consultar mi pedido', aviso_colombia_boton: 'Ir a Colombia'
   };
 
-  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}'; DEF.destacado = ''; DEF.pais_co_amazon = 'Para Colombia, los botones te llevan a Amazon.com, que envía a Colombia.'; DEF.pais_co_pedido = '¿Prefieres pedir con nosotros y pagar en pesos? Ve a la pestaña Colombia.'; DEF.pais_nota = '¿Tu país no está en la lista? Elige «{pais}» para comprar en Amazon.com, que envía a muchos países.'; DEF.pais_info = 'Los botones de cada libro te llevan directamente a la página de compra en la tienda Amazon que elijas.'; DEF.libros_idioma = 'Idioma de los libros:'; DEF.idioma_pagina = 'Idioma de la página';
+  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}'; DEF.destacado = ''; DEF.sec_amazon = 'En Amazon · tapa blanda'; DEF.sec_hotmart = 'En Hotmart · edición digital para tablet'; DEF.hotmart_nota = ''; DEF.hotmart_comprar = 'Ver en Hotmart'; DEF.hotmart_proximamente = 'Próximamente'; DEF.hotmart_hasta = 'Disponible hasta el {fecha}'; DEF.pais_co_amazon = 'Para Colombia, los botones te llevan a Amazon.com, que envía a Colombia.'; DEF.pais_co_pedido = '¿Prefieres pedir con nosotros y pagar en pesos? Ve a la pestaña Colombia.'; DEF.pais_nota = '¿Tu país no está en la lista? Elige «{pais}» para comprar en Amazon.com, que envía a muchos países.'; DEF.pais_info = 'Los botones de cada libro te llevan directamente a la página de compra en la tienda Amazon que elijas.'; DEF.libros_idioma = 'Idioma de los libros:'; DEF.idioma_pagina = 'Idioma de la página';
 
   // Tiendas de Amazon por país (código ISO). Las 14 primeras son las de libros de tapa blanda en KDP.
   const TIENDAS = {
@@ -45,7 +49,7 @@
 
   // actual = pestaña de libros (idioma en que está escrito el libro, o 'colombia')
   // UI = idioma en que se muestran los textos del sitio (selector 🌐, los 6 idiomas)
-  let IDIOMAS = [], VISIBLES = [], LIBROS = [], TEXTOS = {}, actual = 'es', UI = 'es', PAIS = 'US';
+  let IDIOMAS = [], VISIBLES = [], LIBROS = [], TEXTOS = {}, HOTMART = [], actual = 'es', UI = 'es', PAIS = 'US';
 
   // ---------- Lectura de datos ----------
   function parseCSV(t) {
@@ -101,16 +105,20 @@
         console.warn('No pude leer la pestaña "' + pestana + '" de Google Sheets. Uso ' + local);
       } catch (e) { console.warn('Error leyendo Google Sheets (' + pestana + '):', e); }
     }
-    try { const r = await fetch(local, { cache: 'no-cache' }); return aObjetos(parseCSV(await r.text())); }
+    try { const r = await fetch(RAIZ + local, { cache: 'no-cache' }); return aObjetos(parseCSV(await r.text())); }
     catch (e) { console.warn('No pude leer ' + local, e); return []; }
   }
 
   async function cargar() {
-    const [idi, cat, tex] = await Promise.all([
+    const [idi, cat, tex, hot] = await Promise.all([
       leer('Idiomas', 'datos/idiomas.csv', 'codigo'),
       leer('Catalogo', 'datos/catalogo.csv', 'titulo'),
-      leer('Textos', 'datos/textos.csv', 'clave')
+      leer('Textos', 'datos/textos.csv', 'clave'),
+      CON_HOTMART ? leer('Hotmart', 'datos/hotmart.csv', 'titulo') : Promise.resolve([])
     ]);
+    HOTMART = hot.filter(h => h.titulo && siNo(h.visible, true) && vigente(h))
+      .map((h, n) => ({ ...h, n, orden: isNaN(parseFloat(h.orden)) ? 9999 : parseFloat(h.orden) }))
+      .sort((a, b) => a.orden - b.orden || a.n - b.n);
     IDIOMAS = idi.filter(i => i.codigo && siNo(i.activo, true)).map(i => ({
       codigo: i.codigo.toLowerCase(),
       nombre: i.nombre || i.codigo,
@@ -158,7 +166,8 @@
     u = String(u || '').trim();
     const m = u.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]{20,})/);
     if (m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w800';
-    return urlSegura(u);
+    u = urlSegura(u);
+    return u && !/^https?:/i.test(u) ? RAIZ + u : u;   // ruta relativa → desde la raíz del sitio
   }
   // Convierte el texto en párrafos; las líneas que empiezan con •, * o - se muestran como lista.
   function parrafos(s) {
@@ -283,6 +292,39 @@
     </article>`;
   }
 
+  // ---------- Hotmart (edición digital) ----------
+  // Un producto se muestra mientras no haya pasado su fecha "Mostrar hasta" (incluido ese día).
+  function vigente(h) {
+    const hoy = new Date(), f = s => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], m[2] - 1, +m[3]) : null; };
+    const desde = f(h.mostrar_desde), hasta = f(h.mostrar_hasta);
+    if (desde && hoy < desde) return false;
+    if (hasta) { hasta.setDate(hasta.getDate() + 1); if (hoy >= hasta) return false; }
+    return true;
+  }
+  function fechaLarga(s) {
+    const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return '';
+    try { return new Date(+m[1], m[2] - 1, +m[3]).toLocaleDateString(UI, { day: 'numeric', month: 'long' }); } catch (e) { return s; }
+  }
+  function seccionHotmart() {
+    if (!CON_HOTMART || !HOTMART.length) return '';
+    return `<section class="seccion hotmart" id="hotmart"><h2 class="sec-titulo">${esc(t('sec_hotmart'))}</h2>
+      <p class="sec-nota">${esc(t('hotmart_nota'))}</p>
+      <div class="grid">${HOTMART.map(h => {
+        const url = urlSegura(h.enlace_hotmart);
+        const etq = [h.etiqueta ? `<span class="etq nuevo">${esc(h.etiqueta)}</span>` : '',
+          h.idioma ? `<span class="etq">${esc(t('edicion_en', { idioma: nombreIdioma(h.idioma, UI) }))}</span>` : '',
+          h.mostrar_hasta ? `<span class="etq">${esc(t('hotmart_hasta', { fecha: fechaLarga(h.mostrar_hasta) }))}</span>` : ''].join('');
+        return `<article class="card" lang="${esc(h.idioma || 'es')}">
+          ${urlPortada(h.portada) ? `<img class="portada" src="${esc(urlPortada(h.portada))}" alt="${esc(h.titulo)}" loading="lazy">` : `<div class="portada">${esc(h.titulo)}</div>`}
+          <h3>${esc(h.titulo)}</h3>${h.subtitulo ? `<p class="sub">${esc(h.subtitulo)}</p>` : ''}
+          ${h.autor ? `<p class="autor">${esc(h.autor)}</p>` : ''}
+          <div class="etiquetas">${etq}</div>
+          ${h.descripcion ? `<div class="desc">${parrafos(h.descripcion)}</div>` : ''}
+          <div class="compra">${url ? `<a class="btn hot" href="${esc(url)}" target="_blank" rel="noopener">${esc(t('hotmart_comprar'))}</a>`
+                                    : `<span class="prox">${esc(t('hotmart_proximamente'))}</span>`}</div></article>`;
+      }).join('')}</div></section>`;
+  }
+
   // Portada principal: fila de portadas; cada una abre su libro en su pestaña de idioma.
   function vitrina() {
     const el = $('#vitrina'); if (!el) return;
@@ -314,9 +356,10 @@
 
   function pintarIdioma(L) {
     const items = librosPara(L);
-    $('#contenido').innerHTML = `${selectorPais()}<h2 class="titulo-libros">${esc(t('libros_en', { idioma: nombreIdioma(L.codigo, UI) }))}</h2>` + (items.length
+    $('#contenido').innerHTML = `<section class="seccion" id="amazon"><h2 class="sec-titulo">${esc(t('sec_amazon'))}</h2>
+      ${selectorPais()}<h3 class="titulo-libros">${esc(t('libros_en', { idioma: nombreIdioma(L.codigo, UI) }))}</h3>` + (items.length
       ? `<div class="grid">${items.map(x => tarjeta(x, L)).join('')}</div>`
-      : `<p class="vacio">${esc(t('sin_libros'))}</p>`);
+      : `<p class="vacio">${esc(t('sin_libros'))}</p>`) + `</section>` + seccionHotmart();
   }
 
   // Pestaña Colombia: muestra TODOS los libros (de todos los idiomas) con el botón "Pedir en Colombia".
@@ -379,6 +422,7 @@
   // Idioma de los textos: el que eligió el visitante, o el de su navegador (entre los 6 idiomas).
   function detectarUI() {
     const ok = c => IDIOMAS.some(i => i.codigo === c);
+    if (ok(IDIOMA_PAGINA)) return IDIOMA_PAGINA;   // en /fr/ la página está en francés
     try { const g = localStorage.getItem('idioma'); if (ok(g)) return g; } catch (e) { /* nada */ }
     for (const l of (navigator.languages || [navigator.language || ''])) {
       const x = String(l).toLowerCase();
@@ -392,6 +436,7 @@
   function inicial() {
     const h = decodeURIComponent(location.hash.slice(1)).split('/')[0].toLowerCase();
     if (valida(h)) return h;
+    if (valida(IDIOMA_PAGINA)) return IDIOMA_PAGINA;
     try { const g = localStorage.getItem('pestana'); if (valida(g)) return g; } catch (e) { /* nada */ }
     for (const c of [UI, 'en', C.IDIOMA_POR_DEFECTO]) if (valida(c) && c !== 'colombia') return c;
     return VISIBLES[0].codigo;
@@ -417,6 +462,8 @@
     if (ev.target.id === 'idioma') {
       UI = ev.target.value;
       try { localStorage.setItem('idioma', UI); } catch (e) { /* nada */ }
+      // En las páginas por idioma (/es/, /en/…) cambiar de idioma lleva a la página de ese idioma, si existe.
+      if (IDIOMA_PAGINA && C.PAGINAS_IDIOMA && C.PAGINAS_IDIOMA.includes(UI)) { location.href = RAIZ + UI + '/'; return; }
       // Si hay libros escritos en ese idioma, mostramos esa pestaña; si no, se queda en la actual.
       if (actual !== 'colombia' && valida(UI) && UI !== actual) { location.hash = UI; return; }
       const y = window.scrollY; mostrar(actual); window.scrollTo(0, y); return;
