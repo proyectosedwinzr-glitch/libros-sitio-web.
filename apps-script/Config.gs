@@ -13,4 +13,4 @@ const ENVIO_FUERA = 15000;                  // resto de Colombia
 const CORREO_AVISOS = '';                   // dónde te llegan los avisos ('' = tu correo de Google)
 const AVISAR_CLIENTE = true;                // true = el cliente recibe un correo en cada paso de su pedido
 const NOMBRE_TIENDA = 'Libros de Edwin Zar';
-const URL_SITIO = 'https://libros-edwin-zar.pages.dev/';
+const URL_SITIO = 'https://ediciones-edwin-zar.pages.dev/';

@@ -226,19 +226,22 @@
     return etiquetaPais(c);
   }
 
+  // País de compra: 1) el que eligió antes, 2) la zona horaria del equipo (dice mejor dónde está la persona),
+  // 3) la región del idioma del navegador, 4) el idioma, 5) Estados Unidos.
   function detectarPais() {
     try { const g = codigoPais(localStorage.getItem('pais')); if (g) return g; } catch (e) { /* nada */ }
+    let zona = ''; try { zona = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* nada */ }
+    const porZona = { 'Europe/London': 'GB', 'Europe/Dublin': 'IE', 'Europe/Berlin': 'DE', 'Europe/Vienna': 'DE', 'Europe/Zurich': 'DE',
+      'Europe/Paris': 'FR', 'Europe/Madrid': 'ES', 'Europe/Lisbon': 'ES', 'Europe/Rome': 'IT', 'Europe/Amsterdam': 'NL',
+      'Europe/Brussels': 'BE', 'Europe/Warsaw': 'PL', 'Europe/Stockholm': 'SE', 'Asia/Tokyo': 'JP', 'America/Bogota': 'CO' };
+    if (porZona[zona]) return porZona[zona];
+    if (/^Australia\//.test(zona)) return 'AU';
+    if (/^America\/(Toronto|Vancouver|Edmonton|Winnipeg|Halifax|St_Johns|Regina)/.test(zona)) return 'CA';
+    if (/^America\//.test(zona)) return 'US';   // resto de América: Amazon.com
     for (const l of (navigator.languages || [navigator.language || ''])) {
       const r = codigoPais(String(l).split('-')[1]);
       if (r) return r;
     }
-    let zona = ''; try { zona = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* nada */ }
-    const porZona = { 'Europe/London': 'GB', 'Europe/Dublin': 'IE', 'Europe/Berlin': 'DE', 'Europe/Vienna': 'DE', 'Europe/Zurich': 'DE',
-      'Europe/Paris': 'FR', 'Europe/Madrid': 'ES', 'Europe/Lisbon': 'ES', 'Europe/Rome': 'IT', 'Europe/Amsterdam': 'NL',
-      'Europe/Brussels': 'BE', 'Europe/Warsaw': 'PL', 'Europe/Stockholm': 'SE', 'Asia/Tokyo': 'JP' };
-    if (porZona[zona]) return porZona[zona];
-    if (/^Australia\//.test(zona)) return 'AU';
-    if (/^America\/(Toronto|Vancouver|Edmonton|Winnipeg|Halifax|St_Johns|Regina)/.test(zona)) return 'CA';
     const base = String(navigator.language || '').split('-')[0];
     return { ja: 'JP', de: 'DE', fr: 'FR', it: 'IT', nl: 'NL', pl: 'PL', sv: 'SE' }[base] || 'US';
   }

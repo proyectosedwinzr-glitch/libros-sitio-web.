@@ -23,7 +23,7 @@ import csv, html, re, shutil, sys, unicodedata
 from datetime import date
 from pathlib import Path
 
-SITIO = 'https://libros-edwin-zar.pages.dev'          # dirección pública (para canonical, hreflang y og:)
+SITIO = 'https://ediciones-edwin-zar.pages.dev'          # dirección pública (para canonical, hreflang y og:)
 IMAGEN_COMPARTIR = SITIO + '/imagenes/compartir.jpg'
 LOCALE_OG = {'es': 'es_ES', 'en': 'en_US', 'fr': 'fr_FR', 'it': 'it_IT', 'de': 'de_DE', 'ja': 'ja_JP'}
 # Tienda que se muestra sin JavaScript (con JavaScript, el visitante elige su país).

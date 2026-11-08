@@ -12,7 +12,7 @@ El sitio tiene **dos partes**:
 
 
 ## Dónde está publicado el sitio
-- **Principal:** https://libros-edwin-zar.pages.dev/ (Cloudflare Pages). Cada vez que se aprueba un cambio en `main`, Cloudflare lo publica solo en 1–2 minutos.
+- **Principal:** https://ediciones-edwin-zar.pages.dev/ (Cloudflare Pages). Cada vez que se aprueba un cambio en `main`, Cloudflare lo publica solo en 1–2 minutos.
 - La copia antigua en GitHub Pages (`proyectosedwinzr-glitch.github.io/libros-sitio-web./`) sigue funcionando mientras se mantenga activa.
 
 
@@ -23,9 +23,9 @@ El sitio tiene **dos partes**:
 4. Se aprueba el cambio en GitHub. **Cloudflare Pages ejecuta `python3 herramientas/construir.py`** y publica en 1–2 minutos:
    - `/` , `/internacional.html`, `/contraentrega.html` con el catálogo escrito en el HTML;
    - una página por idioma de los libros: `/es/`, `/en/`, `/fr/`, `/it/` (con `hreflang`, `canonical` y `og:`). Si aparece un libro en un idioma nuevo (por ejemplo `de`), su página `/de/` se crea sola.
-5. **Código QR de los libros impresos:** apunta a `https://libros-edwin-zar.pages.dev/qr` (archivos en `imagenes/qr/`). El destino se cambia en `_redirects`, sin reimprimir.
+5. **Código QR de los libros impresos:** apunta a `https://ediciones-edwin-zar.pages.dev/qr` (archivos en `imagenes/qr/`). El destino se cambia en `_redirects`, sin reimprimir.
 
-Prueba sin navegador: `curl -s https://libros-edwin-zar.pages.dev/fr/ | grep "Lettres et histoires"` debe mostrar el título.
+Prueba sin navegador: `curl -s https://ediciones-edwin-zar.pages.dev/fr/ | grep "Lettres et histoires"` debe mostrar el título.
 
 **Configuración de Cloudflare Pages** (una sola vez): *Settings → Builds → Build configuration*: **Build command** `python3 herramientas/construir.py`, **Build output directory** `/` (vacío). Si la construcción fallara, Cloudflare mantiene publicada la versión anterior.
 
@@ -43,11 +43,11 @@ Crea una hoja con **3 pestañas** con estos nombres exactos (puedes importar los
 
 
 ### Tres versiones del sitio (mismos libros, mismos textos)
-- **Principal (con pestaña Colombia):** `https://libros-edwin-zar.pages.dev/`
-- **Internacional (sin pestaña Colombia):** `https://libros-edwin-zar.pages.dev/internacional.html`
+- **Principal (con pestaña Colombia):** `https://ediciones-edwin-zar.pages.dev/`
+- **Internacional (sin pestaña Colombia):** `https://ediciones-edwin-zar.pages.dev/internacional.html`
 
 Las dos usan los mismos datos y el mismo código: un libro o un texto nuevo aparece en ambas. La única diferencia es la línea `MOSTRAR_COLOMBIA = false` dentro de `internacional.html`.
-- **Contra entrega (pestaña Colombia con pago al recibir):** `https://libros-edwin-zar.pages.dev/contraentrega.html`
+- **Contra entrega (pestaña Colombia con pago al recibir):** `https://ediciones-edwin-zar.pages.dev/contraentrega.html`
   Abre la app de pedidos con `?pago=ce`: sin datos Bre-B ni comprobante. Pasos: Pedido recibido → Pedido confirmado (confírmalo por WhatsApp antes de comprar en Amazon) → Pedido en Amazon → Recibido de Amazon → Listo para entrega → Entregado y pagado. En el panel, esos pedidos aparecen marcados con "💵 Contra entrega" y el valor a cobrar.
 
 ### Pestaña `Idiomas` (una fila por pestaña del sitio)
