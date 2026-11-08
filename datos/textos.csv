@@ -7,6 +7,8 @@ catalogo,Catálogo,Catalog,作品一覧,Catalogue,Katalog,Catalogo
 libros_en,Libros en {idioma},Books in {idioma},{idioma}の本,Livres en {idioma},Bücher auf {idioma},Libri in {idioma}
 sec_amazon,En Amazon · tapa blanda,On Amazon · paperback,Amazon・ペーパーバック,Sur Amazon · broché,Bei Amazon · Taschenbuch,Su Amazon · copertina flessibile
 sec_hotmart,En Hotmart · edición digital para tablet,On Hotmart · digital edition for tablets,Hotmart・タブレット用デジタル版,Sur Hotmart · édition numérique pour tablette,Bei Hotmart · digitale Ausgabe für Tablets,Su Hotmart · edizione digitale per tablet
+acceso_amazon,📦 Amazon · tapa blanda,📦 Amazon · paperback,📦 Amazon・ペーパーバック,📦 Amazon · broché,📦 Amazon · Taschenbuch,📦 Amazon · copertina flessibile
+acceso_hotmart,📱 Hotmart · edición digital,📱 Hotmart · digital edition,📱 Hotmart・デジタル版,📱 Hotmart · édition numérique,📱 Hotmart · digitale Ausgabe,📱 Hotmart · edizione digitale
 hotmart_nota,La edición digital se compra en Hotmart y se usa en tu tablet.,"The digital edition is sold on Hotmart, for use on your tablet.",デジタル版はHotmartで販売しており、タブレットでご利用いただけます。,L'édition numérique se vend sur Hotmart et s'utilise sur votre tablette.,"Die digitale Ausgabe gibt es bei Hotmart, zur Nutzung auf Ihrem Tablet.",L'edizione digitale si acquista su Hotmart e si usa sul tuo tablet.
 hotmart_comprar,Ver en Hotmart,See on Hotmart,Hotmartで見る,Voir sur Hotmart,Bei Hotmart ansehen,Vedi su Hotmart
 hotmart_proximamente,Próximamente,Coming soon,近日公開,Bientôt disponible,Demnächst erhältlich,Prossimamente

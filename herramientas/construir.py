@@ -7,7 +7,8 @@ construcción: `python3 herramientas/construir.py`). Lee los datos de /datos y:
 
   • escribe /es/, /en/, /fr/, /it/ (una página por idioma de los libros), con su
     <title>, description, etiquetas og:, canonical y hreflang;
-  • escribe el catálogo dentro de index.html, internacional.html y contraentrega.html.
+  • escribe el catálogo dentro de index.html (principal, sin pestaña Colombia), colombia.html
+    (pedidos con pago Bre-B), contraentrega.html e internacional.html (destino del QR).
 
 Así Google, WhatsApp, Facebook (y cualquiera que descargue la página sin
 navegador) ven los libros. El JavaScript (app.js) sigue funcionando encima:
@@ -177,7 +178,7 @@ def html_pestanas(D, lang, pre, con_colombia):
     activa = ' class="activa"'
     links = ''.join(f'<a href="{pre}{c}/" lang="{c}"{activa if c == lang else ""}>{e(D.nombre_idioma(c))}</a>'
                     for c in D.paginas)
-    col = f'<a href="{pre}#colombia" class="col">Colombia</a>' if con_colombia else ''
+    col = f'<a href="{pre}colombia" class="col">Colombia</a>' if con_colombia else ''
     return f'<span class="etq-pest">📚 {e(D.t("libros_idioma", lang))}</span>{links}{col}'
 
 
@@ -230,7 +231,11 @@ def html_hotmart(D, lang, pre):
 def html_catalogo(D, lang, pre, con_hotmart):
     libros = D.libros_de(lang)
     nombre = D.nombre_idioma(lang)
-    return (f'<section class="seccion" id="amazon"><h2 class="sec-titulo">{e(D.t("sec_amazon", lang))}</h2>'
+    accesos = ''
+    if con_hotmart and D.hotmart:
+        accesos = (f'<nav class="accesos" aria-label="Secciones"><a href="#amazon">{e(D.t("acceso_amazon", lang))}</a>'
+                   f'<a href="#hotmart" class="a-hot">{e(D.t("acceso_hotmart", lang))}</a></nav>')
+    return (accesos + f'<section class="seccion" id="amazon"><h2 class="sec-titulo">{e(D.t("sec_amazon", lang))}</h2>'
             f'<p class="pais-info">🛒 {e(D.t("pais_info", lang))}</p>'
             f'<h3 class="titulo-libros">{e(nombre)}</h3>'
             f'<div class="grid">{"".join(html_tarjeta(D, b, lang, pre) for b in libros)}</div></section>'
@@ -300,9 +305,14 @@ def main():
     # 1) Páginas por idioma de los libros
     for lang in D.paginas:
         escribir(f'{lang}/index.html', pagina(D, plantilla, lang, '../', f'{SITIO}/{lang}/', f'{SITIO}/{lang}/',
-                 f'window.CONFIG.IDIOMA_PAGINA = "{lang}"; window.CONFIG.PAGINAS_IDIOMA = {pags};'))
-    # 2) Las tres versiones que ya existían (en español, con el catálogo escrito)
-    escribir('index.html', pagina(D, plantilla, 'es', '', f'{SITIO}/', f'{SITIO}/', ''))
+                 f'window.CONFIG.IDIOMA_PAGINA = "{lang}"; window.CONFIG.PAGINAS_IDIOMA = {pags}; window.CONFIG.MOSTRAR_COLOMBIA = false;',
+                 con_colombia=False))
+    # 2) Página principal: limpia (sin pestaña Colombia), con Amazon y Hotmart
+    escribir('index.html', pagina(D, plantilla, 'es', '', f'{SITIO}/', f'{SITIO}/',
+             'window.CONFIG.MOSTRAR_COLOMBIA = false;', con_colombia=False))
+    # 3) Pedidos en Colombia (pago Bre-B): /colombia abre directo en la pestaña Colombia
+    escribir('colombia.html', pagina(D, plantilla, 'es', '', f'{SITIO}/colombia', f'{SITIO}/colombia',
+             "window.CONFIG.PESTANA_INICIAL = 'colombia';"))
     escribir('internacional.html', pagina(D, plantilla, 'es', '', f'{SITIO}/internacional', f'{SITIO}/',
              'window.CONFIG.MOSTRAR_COLOMBIA = false; window.CONFIG.MOSTRAR_HOTMART = false;',
              con_colombia=False, con_hotmart=False))

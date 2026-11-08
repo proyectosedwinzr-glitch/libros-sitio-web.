@@ -12,22 +12,26 @@ El sitio tiene **dos partes**:
 
 
 ## Dónde está publicado el sitio
-- **Principal:** https://ediciones-edwin-zar.pages.dev/ (Cloudflare Pages). Cada vez que se aprueba un cambio en `main`, Cloudflare lo publica solo en 1–2 minutos.
-- La copia antigua en GitHub Pages (`proyectosedwinzr-glitch.github.io/libros-sitio-web./`) sigue funcionando mientras se mantenga activa.
+- **Principal (limpia):** https://ediciones-edwin-zar.pages.dev/ — Amazon y Hotmart, sin pestaña Colombia. Páginas por idioma: `/es/`, `/en/`, `/fr/`, `/it/`.
+- **Pedidos en Colombia (Bre-B):** https://ediciones-edwin-zar.pages.dev/colombia — solo para clientes en Colombia.
+- **Pedidos contra entrega:** https://ediciones-edwin-zar.pages.dev/contraentrega
+- **Destino del QR:** https://ediciones-edwin-zar.pages.dev/qr → `/internacional` (sin Colombia ni Hotmart).
+- Se publica en **Cloudflare Pages por subida directa** (proyecto `ediciones-edwin-zar`): no depende de GitHub.
 
 
 ## Cómo actualizar el catálogo (nota corta)
 1. **Libros de Amazon:** se agrega o cambia una fila en `datos/catalogo.csv` (título, idioma, ASIN, portada en `portadas/`, descripción).
 2. **Productos de Hotmart:** se edita `datos/hotmart.csv`. Mientras **Enlace Hotmart** esté vacío, el producto sale como «Próximamente»; al pegar el enlace aparece el botón «Ver en Hotmart». **Mostrar hasta** (AAAA-MM-DD) lo oculta solo después de esa fecha (el bono de Navidad: 2027-01-06).
 3. **Textos del sitio (6 idiomas):** `datos/textos.csv`.
-4. Se aprueba el cambio en GitHub. **Cloudflare Pages ejecuta `python3 herramientas/construir.py`** y publica en 1–2 minutos:
+4. Se construye el sitio con `python3 herramientas/construir.py --salida <carpeta>` (o lo prepara Claude) y se comprime el **contenido** de esa carpeta en un zip.
+   Cloudflare → Workers & Pages → `ediciones-edwin-zar` → **Create deployment** → arrastrar el zip → **Save and deploy**. Publica en 1–2 minutos:
    - `/` , `/internacional.html`, `/contraentrega.html` con el catálogo escrito en el HTML;
    - una página por idioma de los libros: `/es/`, `/en/`, `/fr/`, `/it/` (con `hreflang`, `canonical` y `og:`). Si aparece un libro en un idioma nuevo (por ejemplo `de`), su página `/de/` se crea sola.
 5. **Código QR de los libros impresos:** apunta a `https://ediciones-edwin-zar.pages.dev/qr` (archivos en `imagenes/qr/`). El destino se cambia en `_redirects`, sin reimprimir.
 
 Prueba sin navegador: `curl -s https://ediciones-edwin-zar.pages.dev/fr/ | grep "Lettres et histoires"` debe mostrar el título.
 
-**Configuración de Cloudflare Pages** (una sola vez): *Settings → Builds → Build configuration*: **Build command** `python3 herramientas/construir.py`, **Build output directory** `/` (vacío). Si la construcción fallara, Cloudflare mantiene publicada la versión anterior.
+**Antes de comprimir** se pueden quitar `herramientas/`, `apps-script/`, `README.md` y `.gitignore`: no hacen falta en el sitio publicado.
 
 ## 1. La hoja de Google Sheets del catálogo (pública)
 

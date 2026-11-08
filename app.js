@@ -26,7 +26,7 @@
     aviso_colombia: '¿Estás en Colombia? Pide aquí tus libros y paga por Bre-B.', colombia_seguimiento: 'Consultar mi pedido', aviso_colombia_boton: 'Ir a Colombia'
   };
 
-  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}'; DEF.destacado = ''; DEF.sec_amazon = 'En Amazon · tapa blanda'; DEF.sec_hotmart = 'En Hotmart · edición digital para tablet'; DEF.hotmart_nota = ''; DEF.hotmart_comprar = 'Ver en Hotmart'; DEF.hotmart_proximamente = 'Próximamente'; DEF.hotmart_hasta = 'Disponible hasta el {fecha}'; DEF.pais_co_amazon = 'Para Colombia, los botones te llevan a Amazon.com, que envía a Colombia.'; DEF.pais_co_pedido = '¿Prefieres pedir con nosotros y pagar en pesos? Ve a la pestaña Colombia.'; DEF.pais_nota = '¿Tu país no está en la lista? Elige «{pais}» para comprar en Amazon.com, que envía a muchos países.'; DEF.pais_info = 'Los botones de cada libro te llevan directamente a la página de compra en la tienda Amazon que elijas.'; DEF.libros_idioma = 'Idioma de los libros:'; DEF.idioma_pagina = 'Idioma de la página';
+  DEF.comprar_desde = 'Compro desde:'; DEF.libros_en = 'Libros en {idioma}'; DEF.destacado = ''; DEF.sec_amazon = 'En Amazon · tapa blanda'; DEF.sec_hotmart = 'En Hotmart · edición digital para tablet'; DEF.hotmart_nota = ''; DEF.hotmart_comprar = 'Ver en Hotmart'; DEF.hotmart_proximamente = 'Próximamente'; DEF.hotmart_hasta = 'Disponible hasta el {fecha}'; DEF.acceso_amazon = '📦 Amazon · tapa blanda'; DEF.acceso_hotmart = '📱 Hotmart · edición digital'; DEF.pais_co_amazon = 'Para Colombia, los botones te llevan a Amazon.com, que envía a Colombia.'; DEF.pais_co_pedido = '¿Prefieres pedir con nosotros y pagar en pesos? Ve a la pestaña Colombia.'; DEF.pais_nota = '¿Tu país no está en la lista? Elige «{pais}» para comprar en Amazon.com, que envía a muchos países.'; DEF.pais_info = 'Los botones de cada libro te llevan directamente a la página de compra en la tienda Amazon que elijas.'; DEF.libros_idioma = 'Idioma de los libros:'; DEF.idioma_pagina = 'Idioma de la página';
 
   // Tiendas de Amazon por país (código ISO). Las 14 primeras son las de libros de tapa blanda en KDP.
   const TIENDAS = {
@@ -308,6 +308,13 @@
     const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return '';
     try { return new Date(+m[1], m[2] - 1, +m[3]).toLocaleDateString(UI, { day: 'numeric', month: 'long' }); } catch (e) { return s; }
   }
+  // Botones de acceso rápido a las dos secciones (solo si hay productos de Hotmart para mostrar).
+  function accesos() {
+    if (!CON_HOTMART || !HOTMART.length) return '';
+    return `<nav class="accesos" aria-label="Secciones"><a href="#amazon" data-ir-a="amazon">${esc(t('acceso_amazon'))}</a>
+      <a href="#hotmart" data-ir-a="hotmart" class="a-hot">${esc(t('acceso_hotmart'))}</a></nav>`;
+  }
+
   function seccionHotmart() {
     if (!CON_HOTMART || !HOTMART.length) return '';
     return `<section class="seccion hotmart" id="hotmart"><h2 class="sec-titulo">${esc(t('sec_hotmart'))}</h2>
@@ -359,7 +366,7 @@
 
   function pintarIdioma(L) {
     const items = librosPara(L);
-    $('#contenido').innerHTML = `<section class="seccion" id="amazon"><h2 class="sec-titulo">${esc(t('sec_amazon'))}</h2>
+    $('#contenido').innerHTML = accesos() + `<section class="seccion" id="amazon"><h2 class="sec-titulo">${esc(t('sec_amazon'))}</h2>
       ${selectorPais()}<h3 class="titulo-libros">${esc(t('libros_en', { idioma: nombreIdioma(L.codigo, UI) }))}</h3>` + (items.length
       ? `<div class="grid">${items.map(x => tarjeta(x, L)).join('')}</div>`
       : `<p class="vacio">${esc(t('sin_libros'))}</p>`) + `</section>` + seccionHotmart();
@@ -440,6 +447,7 @@
     const h = decodeURIComponent(location.hash.slice(1)).split('/')[0].toLowerCase();
     if (valida(h)) return h;
     if (valida(IDIOMA_PAGINA)) return IDIOMA_PAGINA;
+    if (valida(C.PESTANA_INICIAL)) return C.PESTANA_INICIAL;   // la página /colombia abre en la pestaña Colombia
     try { const g = localStorage.getItem('pestana'); if (valida(g)) return g; } catch (e) { /* nada */ }
     for (const c of [UI, 'en', C.IDIOMA_POR_DEFECTO]) if (valida(c) && c !== 'colombia') return c;
     return VISIBLES[0].codigo;
@@ -478,6 +486,8 @@
   });
 
   document.addEventListener('click', ev => {
+    const ir = ev.target.closest('[data-ir-a]');
+    if (ir) { ev.preventDefault(); const d = document.getElementById(ir.dataset.irA); if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     const mas = ev.target.closest('.mas');
     if (mas) {
       const d = mas.previousElementSibling, abierta = d.classList.toggle('corta');
