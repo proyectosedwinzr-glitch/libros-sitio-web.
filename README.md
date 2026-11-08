@@ -15,7 +15,7 @@ El sitio tiene **dos partes**:
 - **Principal (limpia):** https://ediciones-edwin-zar.pages.dev/ — Amazon y Hotmart, sin pestaña Colombia. Páginas por idioma: `/es/`, `/en/`, `/fr/`, `/it/`.
 - **Pedidos en Colombia (Bre-B):** https://ediciones-edwin-zar.pages.dev/colombia — solo para clientes en Colombia.
 - **Pedidos contra entrega:** https://ediciones-edwin-zar.pages.dev/contraentrega
-- **Destino del QR:** https://ediciones-edwin-zar.pages.dev/qr → `/internacional` (sin Colombia ni Hotmart).
+- **Destino del QR** (va en la edición de Hotmart): https://ediciones-edwin-zar.pages.dev/qr → la página principal (Amazon y Hotmart).
 - Se publica en **Cloudflare Pages por subida directa** (proyecto `ediciones-edwin-zar`): no depende de GitHub.
 
 
