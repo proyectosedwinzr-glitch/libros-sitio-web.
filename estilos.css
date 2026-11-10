@@ -97,3 +97,15 @@ footer{text-align:center;color:var(--suave);font-size:13px;padding:24px 16px 40p
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .chips a{font-size:13px;text-decoration:none;color:var(--c);border:1px solid #cdd8e4;border-radius:6px;padding:4px 7px;white-space:nowrap}
 .chips a.on{background:var(--c);color:#fff;border-color:var(--c)}
+
+/* Secciones: Amazon (tapa blanda) y Hotmart (edición digital) */
+.seccion{margin:6px 0 34px}
+.sec-titulo{font-size:clamp(21px,4.4vw,26px);margin:8px 0 12px;padding-bottom:8px;border-bottom:3px solid var(--am)}
+.hotmart .sec-titulo{border-color:#f04e23}
+.sec-nota{margin:-4px 0 14px;color:var(--suave)}
+.btn.hot{background:#f04e23;color:#fff;font-weight:bold;width:100%}
+
+/* Acceso rápido a las secciones */
+.accesos{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:4px 0 18px}
+.accesos a{flex:1 1 220px;max-width:340px;text-align:center;text-decoration:none;font-weight:bold;font-size:16px;padding:12px 14px;border-radius:10px;background:var(--am);color:#111;box-shadow:0 1px 4px #0002}
+.accesos a.a-hot{background:#f04e23;color:#fff}

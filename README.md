@@ -12,8 +12,26 @@ El sitio tiene **dos partes**:
 
 
 ## Dónde está publicado el sitio
-- **Principal:** https://libros-edwin-zar.pages.dev/ (Cloudflare Pages). Cada vez que se aprueba un cambio en `main`, Cloudflare lo publica solo en 1–2 minutos.
-- La copia antigua en GitHub Pages (`proyectosedwinzr-glitch.github.io/libros-sitio-web./`) sigue funcionando mientras se mantenga activa.
+- **Principal (limpia):** https://ediciones-edwin-zar.pages.dev/ — Amazon y Hotmart, sin pestaña Colombia. Páginas por idioma: `/es/`, `/en/`, `/fr/`, `/it/`.
+- **Pedidos en Colombia (Bre-B):** https://ediciones-edwin-zar.pages.dev/colombia — solo para clientes en Colombia.
+- **Pedidos contra entrega:** https://ediciones-edwin-zar.pages.dev/contraentrega
+- **Destino del QR** (va en la edición de Hotmart): https://ediciones-edwin-zar.pages.dev/qr → la página principal (Amazon y Hotmart).
+- Se publica en **Cloudflare Pages por subida directa** (proyecto `ediciones-edwin-zar`): no depende de GitHub.
+
+
+## Cómo actualizar el catálogo (nota corta)
+1. **Libros de Amazon:** se agrega o cambia una fila en `datos/catalogo.csv` (título, idioma, ASIN, portada en `portadas/`, descripción).
+2. **Productos de Hotmart:** se edita `datos/hotmart.csv`. Mientras **Enlace Hotmart** esté vacío, el producto sale como «Próximamente»; al pegar el enlace aparece el botón «Ver en Hotmart». **Mostrar hasta** (AAAA-MM-DD) lo oculta solo después de esa fecha (el bono de Navidad: 2027-01-06).
+3. **Textos del sitio (6 idiomas):** `datos/textos.csv`.
+4. Se construye el sitio con `python3 herramientas/construir.py --salida <carpeta>` (o lo prepara Claude) y se comprime el **contenido** de esa carpeta en un zip.
+   Cloudflare → Workers & Pages → `ediciones-edwin-zar` → **Create deployment** → arrastrar el zip → **Save and deploy**. Publica en 1–2 minutos:
+   - `/` , `/internacional.html`, `/contraentrega.html` con el catálogo escrito en el HTML;
+   - una página por idioma de los libros: `/es/`, `/en/`, `/fr/`, `/it/` (con `hreflang`, `canonical` y `og:`). Si aparece un libro en un idioma nuevo (por ejemplo `de`), su página `/de/` se crea sola.
+5. **Código QR de los libros impresos:** apunta a `https://ediciones-edwin-zar.pages.dev/qr` (archivos en `imagenes/qr/`). El destino se cambia en `_redirects`, sin reimprimir.
+
+Prueba sin navegador: `curl -s https://ediciones-edwin-zar.pages.dev/fr/ | grep "Lettres et histoires"` debe mostrar el título.
+
+**Antes de comprimir** se pueden quitar `herramientas/`, `apps-script/`, `README.md` y `.gitignore`: no hacen falta en el sitio publicado.
 
 ## 1. La hoja de Google Sheets del catálogo (pública)
 
@@ -29,11 +47,11 @@ Crea una hoja con **3 pestañas** con estos nombres exactos (puedes importar los
 
 
 ### Tres versiones del sitio (mismos libros, mismos textos)
-- **Principal (con pestaña Colombia):** `https://libros-edwin-zar.pages.dev/`
-- **Internacional (sin pestaña Colombia):** `https://libros-edwin-zar.pages.dev/internacional.html`
+- **Principal (con pestaña Colombia):** `https://ediciones-edwin-zar.pages.dev/`
+- **Internacional (sin pestaña Colombia):** `https://ediciones-edwin-zar.pages.dev/internacional.html`
 
 Las dos usan los mismos datos y el mismo código: un libro o un texto nuevo aparece en ambas. La única diferencia es la línea `MOSTRAR_COLOMBIA = false` dentro de `internacional.html`.
-- **Contra entrega (pestaña Colombia con pago al recibir):** `https://libros-edwin-zar.pages.dev/contraentrega.html`
+- **Contra entrega (pestaña Colombia con pago al recibir):** `https://ediciones-edwin-zar.pages.dev/contraentrega.html`
   Abre la app de pedidos con `?pago=ce`: sin datos Bre-B ni comprobante. Pasos: Pedido recibido → Pedido confirmado (confírmalo por WhatsApp antes de comprar en Amazon) → Pedido en Amazon → Recibido de Amazon → Listo para entrega → Entregado y pagado. En el panel, esos pedidos aparecen marcados con "💵 Contra entrega" y el valor a cobrar.
 
 ### Pestaña `Idiomas` (una fila por pestaña del sitio)

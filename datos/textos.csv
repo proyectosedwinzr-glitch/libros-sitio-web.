@@ -2,9 +2,17 @@ Clave,es,en,ja,fr,de,it
 titulo_sitio,Libros de {autor},Books by {autor},{autor}の本,Livres d’{autor},Bücher von {autor},Libri di {autor}
 subtitulo_sitio,Cuadernos de Memini Zar,Notebooks by Memini Zar,Memini Zarのノート,Carnets de Memini Zar,Notizbücher von Memini Zar,Quaderni di Memini Zar
 lema,Descubre nuestros libros y consíguelos en la tienda Amazon de tu país.,Discover our books and get them from your country's Amazon store.,私たちの本をご紹介します。お住まいの国のAmazonでお求めいただけます。,Découvrez nos livres et procurez-les sur l'Amazon de votre pays.,Entdecken Sie unsere Bücher und kaufen Sie sie bei Amazon in Ihrem Land.,Scopri i nostri libri e acquistali sull'Amazon del tuo paese.
-destacado,Sopas de letras con historias reales y mensajes ocultos · Cuadernos para que nada se te olvide,Word searches with true stories and hidden messages · Notebooks so nothing slips your mind,実話と隠されたメッセージのワードサーチ・何も忘れないためのノート,Des mots mêlés avec des histoires vraies et des messages cachés · Des carnets pour ne rien oublier,"Wortsuchrätsel mit wahren Geschichten und versteckten Botschaften · Notizbücher, damit nichts vergessen wird",Parole intrecciate con storie vere e messaggi nascosti · Quaderni per non dimenticare nulla
+destacado,"Sopas de letras con relatos de hechos reales, frases para completar y un final que aparece con las letras que sobran · Cuadernos para que nada se te olvide","Word searches with true stories, phrases to complete and an ending hidden in the leftover letters · Notebooks so nothing slips your mind",実話、完成させるフレーズ、残った文字に隠された結末のワードサーチ・何も忘れないためのノート,"Des mots mêlés avec des histoires vraies, des phrases à compléter et une fin cachée dans les lettres restantes · Des carnets pour ne rien oublier","Wortsuchrätsel mit wahren Geschichten, Sätzen zum Ergänzen und einem Ende in den übrigen Buchstaben · Notizbücher, damit nichts vergessen wird","Parole intrecciate con storie vere, frasi da completare e un finale nascosto nelle lettere che avanzano · Quaderni per non dimenticare nulla"
 catalogo,Catálogo,Catalog,作品一覧,Catalogue,Katalog,Catalogo
 libros_en,Libros en {idioma},Books in {idioma},{idioma}の本,Livres en {idioma},Bücher auf {idioma},Libri in {idioma}
+sec_amazon,En Amazon · tapa blanda,On Amazon · paperback,Amazon・ペーパーバック,Sur Amazon · broché,Bei Amazon · Taschenbuch,Su Amazon · copertina flessibile
+sec_hotmart,En Hotmart · edición digital para tablet,On Hotmart · digital edition for tablets,Hotmart・タブレット用デジタル版,Sur Hotmart · édition numérique pour tablette,Bei Hotmart · digitale Ausgabe für Tablets,Su Hotmart · edizione digitale per tablet
+acceso_amazon,📦 Amazon · tapa blanda,📦 Amazon · paperback,📦 Amazon・ペーパーバック,📦 Amazon · broché,📦 Amazon · Taschenbuch,📦 Amazon · copertina flessibile
+acceso_hotmart,📱 Hotmart · edición digital,📱 Hotmart · digital edition,📱 Hotmart・デジタル版,📱 Hotmart · édition numérique,📱 Hotmart · digitale Ausgabe,📱 Hotmart · edizione digitale
+hotmart_nota,La edición digital se compra en Hotmart y se usa en tu tablet.,"The digital edition is sold on Hotmart, for use on your tablet.",デジタル版はHotmartで販売しており、タブレットでご利用いただけます。,L'édition numérique se vend sur Hotmart et s'utilise sur votre tablette.,"Die digitale Ausgabe gibt es bei Hotmart, zur Nutzung auf Ihrem Tablet.",L'edizione digitale si acquista su Hotmart e si usa sul tuo tablet.
+hotmart_comprar,Ver en Hotmart,See on Hotmart,Hotmartで見る,Voir sur Hotmart,Bei Hotmart ansehen,Vedi su Hotmart
+hotmart_proximamente,Próximamente,Coming soon,近日公開,Bientôt disponible,Demnächst erhältlich,Prossimamente
+hotmart_hasta,Disponible hasta el {fecha},Available until {fecha},{fecha}まで,Disponible jusqu’au {fecha},Erhältlich bis {fecha},Disponibile fino al {fecha}
 libros_idioma,Idioma de los libros:,Book language:,本の言語：,Langue des livres :,Sprache der Bücher:,Lingua dei libri:
 idioma_pagina,Idioma de la página,Page language,ページの言語,Langue de la page,Sprache der Seite,Lingua della pagina
 comprar_desde,Compro desde:,I'm shopping from:,購入する国：,J'achète depuis :,Ich kaufe aus:,Acquisto da:
@@ -21,7 +29,7 @@ edicion_en,Edición en {idioma},{idioma} edition,{idioma}版,Édition en {idioma
 ver_mas,Ver más,Read more,続きを読む,Lire la suite,Mehr lesen,Leggi di più
 ver_menos,Ver menos,Show less,閉じる,Réduire,Weniger,Mostra meno
 sin_libros,Pronto habrá libros aquí.,Books coming soon.,まもなく公開します。,Des livres arrivent bientôt.,Bald gibt es hier Bücher.,Presto qui ci saranno dei libri.
-pie,© {anio} {autor} · Memini Zar. Los botones te llevan a Amazon.,© {anio} {autor} · Memini Zar. Buttons take you to Amazon.,© {anio} {autor} · Memini Zar。ボタンからAmazonへ移動します。,© {anio} {autor} · Memini Zar. Les boutons mènent à Amazon.,© {anio} {autor} · Memini Zar. Die Schaltflächen führen zu Amazon.,© {anio} {autor} · Memini Zar. I pulsanti portano ad Amazon.
+pie,© {anio} {autor} · Memini Zar,© {anio} {autor} · Memini Zar,© {anio} {autor} · Memini Zar,© {anio} {autor} · Memini Zar,© {anio} {autor} · Memini Zar,© {anio} {autor} · Memini Zar
 aviso_colombia,¿Estás en Colombia? Pide aquí tus libros y paga por Bre-B.,,,,,
 aviso_colombia_ce,¿Estás en Colombia? Pide aquí tus libros y paga al recibirlos.,,,,,
 aviso_colombia_boton,Ir a Colombia,,,,,

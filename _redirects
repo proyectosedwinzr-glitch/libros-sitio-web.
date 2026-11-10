@@ -1,0 +1,5 @@
+# Dirección fija del código QR (va dentro de la edición digital de Hotmart).
+# Lleva a la página principal: Amazon (tapa blanda) y Hotmart (edición digital), sin pestaña Colombia.
+# 302 = temporal: el destino se puede cambiar aquí sin cambiar el QR.
+/qr   /  302
+/qr/  /  302
