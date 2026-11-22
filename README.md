@@ -31,7 +31,7 @@ El sitio tiene **dos partes**:
 
 Prueba sin navegador: `curl -s https://ediciones-edwin-zar.pages.dev/fr/ | grep "Lettres et histoires"` debe mostrar el título.
 
-**Antes de comprimir** se pueden quitar `herramientas/`, `apps-script/`, `README.md` y `.gitignore`: no hacen falta en el sitio publicado.
+Con `--salida`, `construir.py` ya no copia lo que no es del sitio (`privado/` nunca; tampoco `herramientas/`, `docs/`, `apps-script/`, `README.md` ni `CLAUDE.md`): se comprime la carpeta de salida tal cual. «La historia del día» (`/hoy/`): ver `CLAUDE.md` y `docs/hoy/`.
 
 ## 1. La hoja de Google Sheets del catálogo (pública)
 

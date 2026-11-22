@@ -1,0 +1,11 @@
+{
+  "name": "pruebas-sitio-edwin-zar",
+  "private": true,
+  "description": "Pruebas del sitio (capturas y accesibilidad). No forman parte de la construcción: construir.py solo usa Python.",
+  "scripts": {
+    "capturas": "node capturas.js"
+  },
+  "dependencies": {
+    "axe-core": "4.10.2"
+  }
+}

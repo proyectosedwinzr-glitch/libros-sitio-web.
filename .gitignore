@@ -6,3 +6,13 @@
 /de/
 /ja/
 __pycache__/
+
+# «La historia del día»: privado/ NUNCA va a GitHub (el repositorio es público):
+# historias de días futuros, motor, edición interactiva de pago, claves.
+/privado/
+# Lo que escribe el paso «hoy» si alguien construye dentro del repositorio (sin --salida):
+/hoy/index.html
+/hoy/feed.xml
+/hoy/d/
+# Dependencias de las pruebas (npm), fuera de la construcción
+/herramientas/pruebas/node_modules/

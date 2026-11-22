@@ -14,14 +14,25 @@ Así Google, WhatsApp, Facebook (y cualquiera que descargue la página sin
 navegador) ven los libros. El JavaScript (app.js) sigue funcionando encima:
 cambio de idioma, país de compra, pestaña Colombia…
 
+Paso «hoy» («La historia del día», /hoy/): si existe privado/hoy/, valida cada mes con
+herramientas/hoy/validar_hoy.py y, solo si no hay fallos, publica:
+  • hoy/index.html con la historia del día de la construcción escrita dentro (sin el final);
+  • hoy/d/AAAA-MM-DD.json de los 7 días anteriores, el de hoy y los próximos N (--hoy-dias, 40);
+  • hoy/feed.xml con los días publicados hasta hoy.
+Si privado/hoy/ no existe, el paso se salta con un aviso y el resto del sitio se construye igual.
+
 Para probarlo en tu computador sin tocar los archivos originales:
     python3 herramientas/construir.py --salida /ruta/a/una/carpeta/vacia
+Opciones del paso «hoy»: --hoy-fecha AAAA-MM-DD (fecha simulada), --hoy-dias N,
+--hoy-datos CARPETA (otra carpeta de meses, para pruebas).
 Sin --salida, escribe en la carpeta del sitio (es lo que hace Cloudflare).
+Con --salida, NO copia lo que no es del sitio: privado/ (nunca), herramientas/, docs/,
+apps-script/, README.md, CLAUDE.md.
 
 Solo usa la biblioteca estándar de Python.
 """
-import csv, html, re, shutil, sys, unicodedata
-from datetime import date
+import csv, html, json, re, shutil, subprocess, sys, unicodedata
+from datetime import date, timedelta
 from pathlib import Path
 
 SITIO = 'https://ediciones-edwin-zar.pages.dev'          # dirección pública (para canonical, hreflang y og:)
@@ -267,28 +278,305 @@ def reemplazar(h, nombre, contenido):
     return h[:i] + contenido + h[j:]
 
 
+def sustituir(h, viejo, nuevo, todas=False):
+    """Sustitución estricta: si no encuentra su cadena, la construcción falla (no sigue en silencio)."""
+    if viejo not in h:
+        raise SystemExit(f'Sustitución fallida: no se encontró «{viejo[:70]}»')
+    return h.replace(viejo, nuevo) if todas else h.replace(viejo, nuevo, 1)
+
+
 def pagina(D, plantilla, lang, pre, url_pagina, canonical, ajustes, con_colombia=True, con_hotmart=True):
-    h = plantilla.replace('<html lang="es">', f'<html lang="{lang}">', 1)
+    h = sustituir(plantilla, '<html lang="es">', f'<html lang="{lang}">')
     h = reemplazar(h, 'META', html_meta(D, lang, url_pagina, canonical))
     h = reemplazar(h, 'CABECERA', html_cabecera(D, lang, pre))
     h = reemplazar(h, 'PESTANAS', html_pestanas(D, lang, pre, con_colombia))
     h = reemplazar(h, 'CATALOGO', html_catalogo(D, lang, pre, con_hotmart))
     h = reemplazar(h, 'PIE', e(D.t('pie', lang)))
-    h = h.replace('<!--AJUSTES-PAGINA-->', f'<script>{ajustes}</script>' if ajustes else '', 1)
+    h = sustituir(h, '<!--AJUSTES-PAGINA-->', f'<script>{ajustes}</script>' if ajustes else '')
     if pre:   # páginas en subcarpeta: los archivos del sitio están un nivel arriba
         for f in ('estilos.css', 'config.js', 'app.js'):
-            h = h.replace(f'"{f}"', f'"{pre}{f}"')
+            h = sustituir(h, f'"{f}"', f'"{pre}{f}"', todas=True)
     return h
+
+
+# ---------------------------------------------------------------- «La historia del día» (/hoy/)
+HOY_DIAS_ATRAS = 7            # «Días anteriores»: solo los 7 últimos (los demás no se publican)
+HOY_DIAS_ADELANTE = 40        # por defecto, --hoy-dias: así basta una subida al mes
+MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre',
+            'octubre', 'noviembre', 'diciembre']
+DIAS_ES = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+COMO_SE_JUEGA = [   # orden aprobado por el autor (ESPEC §2)
+    'Lee el relato y completa la frase.',
+    'Busca las palabras y la frase, que forma la figura que ves al lado.',
+    'Usa un color para las palabras y otro para la frase.',
+    'Las letras que sobran, bajando por columnas, forman el final del relato.',
+]
+
+
+def fecha_larga(iso, con_dia=False, con_anio=False):
+    d = date.fromisoformat(iso)
+    s = f'{d.day} de {MESES_ES[d.month - 1]}' + (f' de {d.year}' if con_anio else '')
+    return (DIAS_ES[d.weekday()] + ' ' + s) if con_dia else s
+
+
+def fecha_rfc822(iso):
+    """Fecha para RSS (en inglés, como manda el formato): medianoche de Colombia."""
+    d = date.fromisoformat(iso)
+    dias = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    meses = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return f'{dias[d.weekday()]}, {d.day:02d} {meses[d.month - 1]} {d.year} 00:00:00 -0500'
+
+
+def svg_figura(recorrido):
+    """La figura del recorrido de la frase, recortada a su caja (como en la página del libro)."""
+    filas = [p[0] for p in recorrido]
+    cols = [p[1] for p in recorrido]
+    f0, c0 = min(filas), min(cols)
+    alto, ancho = max(filas) - f0 + 1, max(cols) - c0 + 1
+    t = 16
+    puntos = ' '.join(f'{(c - c0) * t + t / 2:g},{(f - f0) * t + t / 2:g}' for f, c in recorrido)
+    ini = recorrido[0]
+    return (f'<svg class="figura" viewBox="0 0 {ancho * t} {alto * t}" width="{ancho * t * 2}" height="{alto * t * 2}" '
+            f'role="img" aria-label="Figura que dibuja el recorrido de la frase">'
+            f'<polyline points="{puntos}" fill="none" stroke="currentColor" stroke-width="5" '
+            f'stroke-linecap="round" stroke-linejoin="round"/>'
+            f'<circle cx="{(ini[1] - c0) * t + t / 2:g}" cy="{(ini[0] - f0) * t + t / 2:g}" r="4.5" fill="currentColor"/></svg>')
+
+
+def css_hoy():
+    fuentes = ''.join(
+        f"@font-face{{font-family:'{fam}';src:url('fuentes/{arch}.ttf') format('truetype');font-weight:{peso};"
+        f"font-style:{estilo};font-display:swap}}"
+        for fam, arch, peso, estilo in [
+            ('Lora', 'Lora-Regular', 400, 'normal'), ('Lora', 'Lora-Bold', 700, 'normal'),
+            ('Lora', 'Lora-Italic', 400, 'italic'), ('Lora', 'Lora-BoldItalic', 700, 'italic'),
+            ('Work Sans', 'WorkSans-Regular', 400, 'normal'), ('Work Sans', 'WorkSans-Bold', 700, 'normal'),
+            ('Work Sans', 'WorkSans-Italic', 400, 'italic'), ('Work Sans', 'WorkSans-BoldItalic', 700, 'italic')])
+    return fuentes + """
+:root{--tinta:#29292e;--gris:#6b6b72;--linea:#d6d3cd;--fondo:#f6f3ec;--papel:#fffdf8;--ambar:#b8781f;
+--ambar-osc:#8a4f0f;--ambar-claro:#fbeed2;--oscuro:#21263a;--verde:#3c7a4a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);font:18px/1.55 'Work Sans',system-ui,sans-serif}
+.pagina{max-width:760px;margin:0 auto;padding:16px 15px 48px}
+a{color:var(--ambar-osc)}
+.volver{display:inline-flex;align-items:center;min-height:44px;font-weight:700;text-decoration:none}
+.volver:hover{text-decoration:underline}
+.antetitulo{margin:18px 0 6px;color:var(--ambar-osc);font-size:18px;font-weight:700;letter-spacing:.14em;
+font-variant:small-caps;text-transform:lowercase}
+h1{font:700 clamp(28px,6vw,40px)/1.15 'Lora',Georgia,serif;margin:0;padding-bottom:12px;border-bottom:4px double var(--ambar)}
+.hecho{color:var(--gris);margin:10px 0 0}
+.relato{font:19px/1.65 'Lora',Georgia,serif;margin:20px 0}
+h2{font:700 22px/1.3 'Lora',Georgia,serif;margin:28px 0 10px}
+.nota{background:var(--ambar-claro);border-left:4px solid var(--ambar);padding:12px 14px;border-radius:6px}
+.frase-caja{display:flex;flex-wrap:wrap;gap:18px;align-items:center}
+.frase{display:flex;flex-wrap:wrap;gap:6px 14px}
+.palabra{display:flex;gap:3px}
+.letra{width:30px;height:38px;display:flex;align-items:center;justify-content:center;font:700 20px 'Work Sans',sans-serif;
+background:var(--papel);border:1px solid var(--linea);border-bottom:3px solid var(--tinta);border-radius:3px}
+.letra.hueco{background:transparent}
+.figura{color:var(--ambar-osc);max-width:120px;height:auto}
+.rejilla{--celda:min(40px,calc((100vw - 30px) / var(--lado)));border-collapse:collapse;margin:8px 0;
+background:var(--papel);table-layout:fixed}
+.rejilla td{width:var(--celda);height:var(--celda);min-width:var(--celda);border:1px solid var(--linea);
+text-align:center;vertical-align:middle;padding:0;font:700 20px 'Work Sans',sans-serif}
+.lista{columns:2;padding-left:22px;margin:8px 0}
+.lista li{margin:2px 0;letter-spacing:.06em}
+.ranuras{display:flex;flex-wrap:wrap;gap:6px 14px}
+.ranuras .letra{width:26px;height:34px}
+details{margin:24px 0;background:var(--papel);border:1px solid var(--linea);border-radius:8px;padding:4px 14px}
+summary{min-height:44px;display:flex;align-items:center;font-weight:700;cursor:pointer}
+.sin-js{color:var(--gris)}
+.pie{margin-top:40px;color:var(--gris);border-top:1px solid var(--linea);padding-top:14px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+"""
+
+
+def html_hoy(D, h, nota, imagen):
+    """La página /hoy/ con la historia escrita dentro (para buscadores y sin JavaScript). NUNCA lleva el final."""
+    url = f'{SITIO}/hoy/'
+    tit_og = 'La historia del día · Libros de Edwin Zar'
+    desc = ('Una historia real cada día, con una sopa de letras para descubrir su final escondido. '
+            'Gratis y sin registrarse.')
+    cuerpo = ''
+    if nota:
+        cuerpo += f'<p class="nota" role="status">{e(nota)}</p>'
+    if h:
+        pg, cu = h['pagina'], h['cuadricula']
+        frase = ''.join(
+            '<span class="palabra">' + ''.join(
+                f'<span class="letra{" hueco" if ch == "_" else ""}">{"" if ch == "_" else e(ch)}</span>' for ch in tok)
+            + '</span>' for tok in pg['frase_visible'])
+        visible_lector = ' '.join(''.join(ch if ch != '_' else '·' for ch in tok) for tok in pg['frase_visible'])
+        filas = ''.join('<tr>' + ''.join(f'<td>{e(ch)}</td>' for ch in fila) + '</tr>' for fila in cu['filas'])
+        ranuras = ''.join('<span class="palabra">' + '<span class="letra hueco"></span>' * n + '</span>'
+                          for n in h['pagina_cuadricula']['ranuras'])
+        cuerpo += (
+            f'<p class="antetitulo">{e(h.get("antetitulo") or "La historia del día")} · {e(fecha_larga(h["fecha"]))}</p>'
+            f'<h1>{e(h["titulo"])}</h1>'
+            f'<p class="hecho">{e(h.get("fecha_del_hecho"))}</p>'
+            f'<p class="relato">{e(h["relato"])}</p>'
+            f'<h2>{e(pg.get("rotulo_frase") or "La frase")}</h2>'
+            f'<div class="frase-caja"><div class="frase" aria-hidden="true">{frase}</div>'
+            + (svg_figura(h['frase_recorrido']) if pg.get('figura_visible') else '') + '</div>'
+            f'<p class="sr">La frase, con las letras que ya se ven (los puntos son huecos): {e(visible_lector)}</p>'
+            f'<h2>La cuadrícula</h2>'
+            f'<table class="rejilla" style="--lado:{int(cu["lado"])}"><caption class="sr">Cuadrícula de '
+            f'{int(cu["lado"])} por {int(cu["lado"])} letras</caption><tbody>{filas}</tbody></table>'
+            f'<p>{e(pg.get("indicaciones"))}</p>'
+            f'<h2>{e(pg.get("rotulo_lista") or "Las palabras")}</h2>'
+            '<ul class="lista">' + ''.join(f'<li>{e(w)}</li>' for w in pg['lista']) + '</ul>'
+            f'<h2>{e(h["pagina_cuadricula"].get("rotulo_final") or "El final del relato")}</h2>'
+            f'<div class="ranuras" aria-hidden="true">{ranuras}</div>'
+            '<p class="sin-js">Para jugar en la pantalla hace falta JavaScript. También puedes resolverla en papel.</p>')
+    cuerpo += ('<details><summary>Cómo se juega</summary><ol>' + ''.join(f'<li>{e(x)}</li>' for x in COMO_SE_JUEGA)
+               + '</ol></details>')
+    return (
+        '<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        f'<title>{e((h["titulo"] + " · ") if h else "")}La historia del día · Libros de Edwin Zar</title>\n'
+        f'<meta name="description" content="{e(desc)}">\n<link rel="canonical" href="{url}">\n'
+        f'<link rel="alternate" type="application/rss+xml" title="La historia del día" href="feed.xml">\n'
+        f'<meta property="og:type" content="website">\n<meta property="og:site_name" content="Libros de Edwin Zar">\n'
+        f'<meta property="og:locale" content="es_ES">\n<meta property="og:url" content="{url}">\n'
+        f'<meta property="og:title" content="{e(tit_og)}">\n<meta property="og:description" content="{e(desc)}">\n'
+        f'<meta property="og:image" content="{imagen}">\n<meta name="twitter:card" content="summary_large_image">\n'
+        f'<meta name="twitter:image" content="{imagen}">\n'
+        "<link rel=\"icon\" href=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E"
+        "%3Ctext y='.9em' font-size='90'%3E📚%3C/text%3E%3C/svg%3E\">\n"
+        f'<style>{css_hoy()}</style>\n</head>\n<body>\n<main class="pagina" id="hoy" data-fecha="{e(h["fecha"]) if h else ""}">\n'
+        '<a class="volver" href="../">← Libros de Edwin Zar</a>\n'
+        f'{cuerpo}\n<p class="pie">{e(D.t("pie", "es"))}</p>\n</main>\n</body>\n</html>\n')
+
+
+def xml_feed(dias, historias):
+    items = ''.join(
+        '<item>'
+        f'<title>{e(fecha_larga(f, con_anio=True))} · {e(historias[f]["titulo"])}</title>'
+        f'<link>{SITIO}/hoy/#{f}</link><guid isPermaLink="false">hoy-{f}</guid>'
+        f'<pubDate>{fecha_rfc822(f)}</pubDate>'
+        f'<description>{e(historias[f]["relato"])}</description>'
+        '</item>' for f in sorted(dias, reverse=True))
+    return ('<?xml version="1.0" encoding="utf-8"?>\n<rss version="2.0"><channel>'
+            '<title>La historia del día · Libros de Edwin Zar</title>'
+            f'<link>{SITIO}/hoy/</link>'
+            '<description>Una historia real cada día, con una sopa de letras para descubrir su final escondido.'
+            '</description><language>es</language>' + items + '</channel></rss>\n')
+
+
+def paso_hoy(D, raiz, salida, fecha, dias, carpeta):
+    """Devuelve 0 si se publicó o se saltó con aviso; 1 si el validador falló (y entonces no se publica nada de /hoy/)."""
+    destino = salida / 'hoy'
+
+    def limpiar_generados():
+        for g in (destino / 'index.html', destino / 'feed.xml'):
+            if g.exists(): g.unlink()
+        if (destino / 'd').exists(): shutil.rmtree(destino / 'd')
+
+    def no_publicar():
+        if salida != raiz:
+            if destino.exists(): shutil.rmtree(destino)      # carpeta de salida: nada de /hoy/
+        else:
+            limpiar_generados()                               # dentro del repositorio: nunca se borra hoy/fuentes
+
+    if not carpeta.is_dir():
+        print(f'Aviso: no existe {carpeta}: se salta «La historia del día» (/hoy/). El resto del sitio se construye igual.')
+        no_publicar()
+        return 0
+    meses = sorted(carpeta.glob('hoy_*.json'))
+    if not meses:
+        print(f'Aviso: no hay ningún hoy_AAAA-MM.json en {carpeta}: se salta «La historia del día» (/hoy/).')
+        no_publicar()
+        return 0
+    validador = raiz / 'herramientas' / 'hoy' / 'validar_hoy.py'
+    historias, fallo = {}, False
+    for m in meses:
+        r = subprocess.run([sys.executable, '-I', str(validador), str(m)], capture_output=True, text=True,
+                           encoding='utf-8', errors='replace')
+        print('  Validador: ' + (r.stdout.strip() or '(sin salida)').replace('\n', '\n  '))
+        if r.returncode != 0:
+            fallo = True
+            if r.stderr.strip():
+                print('  ' + r.stderr.strip().replace('\n', '\n  '))
+            continue
+        for h in json.loads(m.read_text(encoding='utf-8'))['historias']:
+            if h['fecha'] in historias:
+                fallo = True
+                print(f'  ✗ La fecha {h["fecha"]} está en dos archivos de mes.')
+            historias[h['fecha']] = h
+    if fallo:
+        print('ERROR: el validador encontró fallos. NO se publica nada de «La historia del día» (/hoy/).')
+        no_publicar()
+        return 1
+
+    desde, hasta = fecha - timedelta(days=HOY_DIAS_ATRAS), fecha + timedelta(days=dias)
+    publicadas = sorted(f for f in historias if desde <= date.fromisoformat(f) <= hasta)
+    hasta_hoy = [f for f in publicadas if date.fromisoformat(f) <= fecha]
+    # Portada: la de hoy; si no hay, la última publicada (con una nota amable); si aún no ha empezado, un aviso.
+    pasadas = sorted(f for f in historias if date.fromisoformat(f) <= fecha)
+    hoy_iso = fecha.isoformat()
+    if hoy_iso in historias:
+        portada, nota = historias[hoy_iso], ''
+    elif pasadas:
+        portada = historias[pasadas[-1]]
+        nota = (f'La historia de hoy todavía no está lista. Mientras tanto, aquí tienes la del '
+                f'{fecha_larga(pasadas[-1], con_dia=True)}.')
+    else:
+        portada = None
+        nota = (f'La primera historia del día llega el {fecha_larga(min(historias), con_dia=True, con_anio=True)}. '
+                'Cada día, una historia real y una sopa de letras para descubrir su final.')
+
+    limpiar_generados()
+    (destino / 'd').mkdir(parents=True, exist_ok=True)
+    for f in publicadas:
+        (destino / 'd' / f'{f}.json').write_text(json.dumps(historias[f], ensure_ascii=False, separators=(',', ':')),
+                                                 encoding='utf-8')
+    imagen = f'{SITIO}/hoy/compartir.jpg' if (raiz / 'hoy' / 'compartir.jpg').exists() else IMAGEN_COMPARTIR
+    (destino / 'index.html').write_text(html_hoy(D, portada, nota, imagen), encoding='utf-8')
+    (destino / 'feed.xml').write_text(xml_feed(hasta_hoy, historias), encoding='utf-8')
+    rango = f'{publicadas[0]} … {publicadas[-1]}' if publicadas else 'ninguno'
+    print(f'La historia del día (fecha {hoy_iso}, --hoy-dias {dias}): {len(publicadas)} días publicados ({rango}); '
+          f'portada: {portada["fecha"] if portada else "aviso, aún no hay historias"}; feed: {len(hasta_hoy)} días.')
+    return 0
+
+
+# Lo que no es del sitio y no se copia a la carpeta de salida (privado/ NUNCA).
+NO_PUBLICAR = {'privado', 'herramientas', 'docs', 'apps-script', 'README.md', 'CLAUDE.md', '.gitignore', '.nojekyll'}
+
+
+def ignorar_al_copiar(raiz):
+    def f(carpeta, nombres):
+        fuera = {n for n in nombres if n in ('.git', '__pycache__', 'node_modules')}
+        if Path(carpeta).resolve() == raiz:
+            fuera |= {n for n in nombres if n in NO_PUBLICAR}
+        return fuera
+    return f
+
+
+def opcion(nombre, defecto=None):
+    if nombre not in sys.argv:
+        return defecto
+    i = sys.argv.index(nombre)
+    if i + 1 >= len(sys.argv):
+        raise SystemExit(f'Falta el valor de {nombre}')
+    return sys.argv[i + 1]
 
 
 def main():
     raiz = Path(__file__).resolve().parent.parent
+    try:
+        fecha_hoy = date.fromisoformat(opcion('--hoy-fecha', date.today().isoformat()))
+        dias_hoy = int(opcion('--hoy-dias', HOY_DIAS_ADELANTE))
+    except ValueError as err:
+        raise SystemExit(f'Opción no válida: {err}')
+    if dias_hoy < 0:
+        raise SystemExit('--hoy-dias no puede ser negativo')
+    datos_hoy = Path(opcion('--hoy-datos', str(raiz / 'privado' / 'hoy'))).resolve()
     salida = raiz
     if '--salida' in sys.argv:
-        salida = Path(sys.argv[sys.argv.index('--salida') + 1]).resolve()
+        salida = Path(opcion('--salida')).resolve()
         if salida != raiz:
             if salida.exists(): shutil.rmtree(salida)
-            shutil.copytree(raiz, salida, ignore=shutil.ignore_patterns('.git', '__pycache__'))
+            shutil.copytree(raiz, salida, ignore=ignorar_al_copiar(raiz))
     plantilla = (raiz / 'index.html').read_text(encoding='utf-8')
     D = Datos(raiz)
     if not D.libros:
@@ -319,7 +607,9 @@ def main():
     escribir('contraentrega.html', pagina(D, plantilla, 'es', '', f'{SITIO}/contraentrega', f'{SITIO}/',
              "window.CONFIG.PAGO_COLOMBIA = 'contraentrega';"))
     print(f'Listo: {len(D.libros)} libros, {len(D.hotmart)} productos de Hotmart, páginas: {", ".join(escritas)}')
+    # 4) «La historia del día» (/hoy/): al final, para que un fallo suyo no impida construir el resto
+    return paso_hoy(D, raiz, salida, fecha_hoy, dias_hoy, datos_hoy)
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
