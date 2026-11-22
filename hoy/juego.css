@@ -1,0 +1,155 @@
+/* «La historia del día» (/hoy/) · estilos de la página y del juego.
+   El juego viene de la edición interactiva de «Letras con historia» (vol. 1), adaptado:
+   la marca de los libros, las fuentes incrustadas (sin Google Fonts), texto de 18 px o más,
+   botones de 44 px o más, un color para las palabras y otro para la frase. */
+
+@font-face{font-family:'Lora';src:url('fuentes/Lora-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Lora';src:url('fuentes/Lora-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Lora';src:url('fuentes/Lora-Italic.ttf') format('truetype');font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:'Lora';src:url('fuentes/Lora-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic;font-display:swap}
+@font-face{font-family:'Work Sans';src:url('fuentes/WorkSans-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Work Sans';src:url('fuentes/WorkSans-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Work Sans';src:url('fuentes/WorkSans-Italic.ttf') format('truetype');font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:'Work Sans';src:url('fuentes/WorkSans-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic;font-display:swap}
+
+:root{
+  --tinta:#29292e; --gris:#6b6b72; --linea:#d6d3cd; --fondo:#f6f3ec; --papel:#fffdf8;
+  --ambar:#b8781f; --ambar-osc:#8a4f0f; --ambar-claro:#fbeed2; --oscuro:#21263a; --verde:#3c7a4a;
+  --c-palabra:#d9e8d3;   /* casillas de las palabras encontradas */
+  --c-frase:#f6dca4;     /* casillas de la frase */
+  --boton:#e7e3da;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--fondo);color:var(--tinta);font:18px/1.55 'Work Sans',system-ui,sans-serif}
+a{color:var(--ambar-osc)}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+
+/* ---------- página ---------- */
+.pagina{max-width:760px;margin:0 auto;padding:16px 15px 48px}
+.volver{display:inline-flex;align-items:center;min-height:44px;font-weight:700;text-decoration:none}
+.volver:hover{text-decoration:underline}
+.prueba{background:var(--oscuro);color:#fff;padding:10px 14px;border-radius:6px;font-weight:700;margin:8px 0}
+.antetitulo{margin:18px 0 6px;color:var(--ambar-osc);font-size:18px;font-weight:700;letter-spacing:.14em;
+  font-variant:small-caps;text-transform:lowercase}
+h1{font:700 clamp(28px,6vw,40px)/1.15 'Lora',Georgia,serif;margin:0;padding-bottom:12px;border-bottom:4px double var(--ambar)}
+h1:focus{outline:none}
+h2{font:700 22px/1.3 'Lora',Georgia,serif;margin:28px 0 10px}
+.hecho{color:var(--gris);margin:10px 0 0}
+.nivel{display:flex;align-items:center;gap:8px;margin:6px 0 0;color:var(--gris)}
+.cuadros{display:inline-flex;gap:3px}
+.cuadros i{width:10px;height:10px;border:1.5px solid var(--tinta);display:block}
+.cuadros i.l{background:var(--tinta)}
+.relato{font:19px/1.65 'Lora',Georgia,serif;margin:20px 0}
+.nota{background:var(--ambar-claro);border-left:4px solid var(--ambar);padding:12px 14px;border-radius:6px;margin:12px 0}
+.nota a{font-weight:700}
+.ir-hoy{display:inline-flex;align-items:center;min-height:44px;font-weight:700}
+.pie{margin-top:40px;color:var(--gris);border-top:1px solid var(--linea);padding-top:14px}
+details{margin:24px 0;background:var(--papel);border:1px solid var(--linea);border-radius:8px;padding:4px 14px}
+summary{min-height:44px;display:flex;align-items:center;font-weight:700;cursor:pointer}
+details ol,details ul{margin:4px 0 12px;padding-left:24px}
+details li{margin:4px 0}
+
+/* la frase y el final: casillas con sus letras a la vista y sus huecos */
+.frase-caja{display:flex;flex-wrap:wrap;gap:18px;align-items:center}
+.frase,.ranuras{display:flex;flex-wrap:wrap;gap:8px 14px}
+.frase .palabra,.ranuras .palabra{display:flex;gap:2px}
+.letra{width:29px;height:40px;display:flex;align-items:center;justify-content:center;font:700 20px 'Work Sans',sans-serif;
+  background:var(--papel);border:1px solid var(--linea);border-bottom:3px solid var(--tinta);border-radius:3px}
+.letra.hueco{background:transparent}
+.letra.puesta{color:var(--ambar-osc);background:var(--papel)}
+.letra.nueva{animation:caer .35s ease both}
+.ranuras .letra{width:25px;height:36px}
+.ranuras .letra.puesta{color:#fff;background:var(--oscuro);border-color:var(--oscuro)}
+.figura{color:var(--ambar-osc);max-width:120px;height:auto;flex:none}
+
+/* la cuadrícula escrita en la página (sin JavaScript) */
+.tabla{--celda:min(40px,calc((100vw - 30px) / var(--lado)));border-collapse:collapse;margin:8px 0;
+  background:var(--papel);table-layout:fixed}
+.tabla td{width:var(--celda);height:var(--celda);min-width:var(--celda);border:1px solid var(--linea);
+  text-align:center;vertical-align:middle;padding:0;font:700 20px 'Work Sans',sans-serif}
+.lista-papel{columns:2;padding-left:22px;margin:8px 0}
+.lista-papel li{margin:2px 0;letter-spacing:.06em}
+.sin-js{color:var(--gris)}
+
+/* ---------- el juego ---------- */
+.reto{display:grid;grid-template-columns:minmax(0,1fr);gap:0 40px}
+.escribir{margin:16px 0 0}
+.escribir label{display:block;font-weight:700;margin-bottom:6px}
+.escribir .fila{display:flex;gap:8px;flex-wrap:wrap}
+.escribir input{flex:1 1 200px;min-width:0;min-height:44px;font:18px 'Work Sans',sans-serif;padding:8px 12px;
+  border:1px solid var(--gris);border-radius:8px;background:var(--papel);color:var(--tinta)}
+.escribir input:focus-visible{outline:3px solid var(--ambar);outline-offset:1px}
+.msg{min-height:28px;margin:6px 0 0;color:var(--gris)}
+button.b{font:700 18px 'Work Sans',sans-serif;min-height:44px;min-width:44px;border:0;border-radius:8px;padding:8px 16px;
+  background:var(--boton);color:var(--tinta);cursor:pointer;touch-action:manipulation}
+button.b.osc{background:var(--oscuro);color:#fff}
+button.b:hover{background:#dcd7cb}
+button.b.osc:hover{background:#343b57}
+button.b:active{transform:translateY(1px)}
+button.b:focus-visible{outline:3px solid var(--ambar);outline-offset:2px}
+.cuenta{margin:18px 0 8px;color:var(--gris);text-align:center}
+.cuenta b{color:var(--tinta)}
+
+.lienzo{--celda:min(44px,calc((100vw - 30px) / var(--lado)));position:relative;width:calc(var(--celda) * var(--lado));
+  max-width:100%;margin:0 auto;background:var(--papel);border-radius:8px}
+.rejilla{display:grid;grid-template-columns:repeat(var(--lado),var(--celda));touch-action:manipulation;
+  user-select:none;-webkit-user-select:none;position:relative;z-index:1}
+.c{width:var(--celda);height:var(--celda);padding:0;margin:0;border:0;border-radius:50%;background:transparent;
+  font:500 calc(var(--celda) * .55)/1 'Work Sans',sans-serif;color:var(--tinta);cursor:pointer;
+  -webkit-tap-highlight-color:transparent;transition:background .15s,transform .15s}
+@media (hover:hover){.c:hover{background:#efe9dc}}
+.c:focus{outline:none}
+.c:focus-visible{outline:3px solid var(--ambar);outline-offset:-3px}
+.c.on{background:var(--c-palabra);border-radius:6px}
+.c.fr{background:var(--c-frase);border-radius:6px;font-weight:700}
+.c.sobra{font-weight:700;box-shadow:inset 0 0 0 2px var(--oscuro)}
+.c.sobra.pulso{animation:pulso 1.6s ease infinite}
+.c.sobra.leida{color:#fff;background:var(--oscuro);box-shadow:none}
+.c.sel{background:var(--ambar-osc);color:#fff;font-weight:700;transform:scale(1.06);border-radius:50%;box-shadow:0 0 0 2px #f3d49a}
+.c.pista{animation:pista 1.2s ease 2;box-shadow:0 0 0 3px var(--ambar)}
+.c.no{animation:no .35s ease}
+@keyframes pulso{50%{box-shadow:inset 0 0 0 2px var(--oscuro),0 0 0 5px rgba(33,38,58,.22)}}
+@keyframes pista{50%{background:#ffe08a;color:var(--tinta);transform:scale(1.16)}}
+@keyframes no{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+@keyframes caer{from{opacity:0;transform:translateY(-8px)}to{opacity:1}}
+svg.trazo{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;overflow:visible}
+svg.trazo polyline{fill:none;stroke:var(--ambar-osc);stroke-opacity:.42;stroke-linecap:round;stroke-linejoin:round}
+
+.aviso{min-height:28px;margin:10px 0 0;text-align:center;font-weight:700}
+.botones{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0 0}
+.indicaciones{margin:18px 0 0}
+.lista{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}
+.pal{display:flex;align-items:center;gap:8px;letter-spacing:.06em;min-height:32px}
+.pal .marca{width:22px;height:22px;flex:none;border-radius:50%;border:2px solid var(--gris);display:grid;place-items:center;
+  font-size:18px;line-height:1;color:#fff}
+.pal.hecha .w{text-decoration:line-through;color:var(--gris)}
+.pal.hecha .marca{background:var(--verde);border-color:var(--verde)}
+.acc-msg{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.acc-msg p{margin:0}
+.final-texto{font:italic 21px/1.55 'Lora',Georgia,serif;margin:18px 0 0;padding:16px 18px;border-left:4px solid var(--ambar);
+  background:var(--papel);border-radius:0 8px 8px 0}
+.resuelta .pistas-n{color:var(--gris);margin:10px 0 0}
+.fuentes li{overflow-wrap:anywhere}
+
+/* días anteriores y la semana (sin rachas) */
+.dias{margin-top:36px;border-top:1px solid var(--linea)}
+.semana{margin:6px 0 10px}
+.dias-lista{list-style:none;margin:0;padding:0}
+.dias-lista li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;border-bottom:1px solid var(--linea)}
+.dias-lista a{display:inline-flex;align-items:center;min-height:44px;font-weight:700}
+.dias-lista a[aria-current]{color:var(--tinta);text-decoration:none}
+.dias-lista .ok{color:var(--verde);font-weight:700}
+
+@media (min-width:980px){
+  .pagina.con-juego{max-width:1160px}
+  .reto{grid-template-columns:minmax(0,1fr) minmax(0,520px)}
+  .a-tablero{padding-top:18px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .c,.letra{transition:none}
+  .c.sobra.pulso,.c.no,.letra.nueva{animation:none}
+  .c.pista{animation:none;background:#ffe08a;color:var(--tinta)}
+}

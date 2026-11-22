@@ -17,6 +17,7 @@ cambio de idioma, país de compra, pestaña Colombia…
 Paso «hoy» («La historia del día», /hoy/): si existe privado/hoy/, valida cada mes con
 herramientas/hoy/validar_hoy.py y, solo si no hay fallos, publica:
   • hoy/index.html con la historia del día de la construcción escrita dentro (sin el final);
+    al cargar, hoy/juego.js pasa a la historia del día del dispositivo y la vuelve jugable;
   • hoy/d/AAAA-MM-DD.json de los 7 días anteriores, el de hoy y los próximos N (--hoy-dias, 40);
   • hoy/feed.xml con los días publicados hasta hoy.
 Si privado/hoy/ no existe, el paso se salta con un aviso y el resto del sitio se construye igual.
@@ -24,7 +25,8 @@ Si privado/hoy/ no existe, el paso se salta con un aviso y el resto del sitio se
 Para probarlo en tu computador sin tocar los archivos originales:
     python3 herramientas/construir.py --salida /ruta/a/una/carpeta/vacia
 Opciones del paso «hoy»: --hoy-fecha AAAA-MM-DD (fecha simulada), --hoy-dias N,
---hoy-datos CARPETA (otra carpeta de meses, para pruebas).
+--hoy-datos CARPETA (otra carpeta de meses, para pruebas), --hoy-prueba (la página queda fijada en
+--hoy-fecha, para jugar antes de tiempo; esa carpeta NO se sube como sitio definitivo).
 Sin --salida, escribe en la carpeta del sitio (es lo que hace Cloudflare).
 Con --salida, NO copia lo que no es del sitio: privado/ (nunca), herramientas/, docs/,
 apps-script/, README.md, CLAUDE.md.
@@ -343,56 +345,10 @@ def svg_figura(recorrido):
             f'<circle cx="{(ini[1] - c0) * t + t / 2:g}" cy="{(ini[0] - f0) * t + t / 2:g}" r="4.5" fill="currentColor"/></svg>')
 
 
-def css_hoy():
-    fuentes = ''.join(
-        f"@font-face{{font-family:'{fam}';src:url('fuentes/{arch}.ttf') format('truetype');font-weight:{peso};"
-        f"font-style:{estilo};font-display:swap}}"
-        for fam, arch, peso, estilo in [
-            ('Lora', 'Lora-Regular', 400, 'normal'), ('Lora', 'Lora-Bold', 700, 'normal'),
-            ('Lora', 'Lora-Italic', 400, 'italic'), ('Lora', 'Lora-BoldItalic', 700, 'italic'),
-            ('Work Sans', 'WorkSans-Regular', 400, 'normal'), ('Work Sans', 'WorkSans-Bold', 700, 'normal'),
-            ('Work Sans', 'WorkSans-Italic', 400, 'italic'), ('Work Sans', 'WorkSans-BoldItalic', 700, 'italic')])
-    return fuentes + """
-:root{--tinta:#29292e;--gris:#6b6b72;--linea:#d6d3cd;--fondo:#f6f3ec;--papel:#fffdf8;--ambar:#b8781f;
---ambar-osc:#8a4f0f;--ambar-claro:#fbeed2;--oscuro:#21263a;--verde:#3c7a4a}
-*{box-sizing:border-box}
-body{margin:0;background:var(--fondo);color:var(--tinta);font:18px/1.55 'Work Sans',system-ui,sans-serif}
-.pagina{max-width:760px;margin:0 auto;padding:16px 15px 48px}
-a{color:var(--ambar-osc)}
-.volver{display:inline-flex;align-items:center;min-height:44px;font-weight:700;text-decoration:none}
-.volver:hover{text-decoration:underline}
-.antetitulo{margin:18px 0 6px;color:var(--ambar-osc);font-size:18px;font-weight:700;letter-spacing:.14em;
-font-variant:small-caps;text-transform:lowercase}
-h1{font:700 clamp(28px,6vw,40px)/1.15 'Lora',Georgia,serif;margin:0;padding-bottom:12px;border-bottom:4px double var(--ambar)}
-.hecho{color:var(--gris);margin:10px 0 0}
-.relato{font:19px/1.65 'Lora',Georgia,serif;margin:20px 0}
-h2{font:700 22px/1.3 'Lora',Georgia,serif;margin:28px 0 10px}
-.nota{background:var(--ambar-claro);border-left:4px solid var(--ambar);padding:12px 14px;border-radius:6px}
-.frase-caja{display:flex;flex-wrap:wrap;gap:18px;align-items:center}
-.frase{display:flex;flex-wrap:wrap;gap:6px 14px}
-.palabra{display:flex;gap:3px}
-.letra{width:30px;height:38px;display:flex;align-items:center;justify-content:center;font:700 20px 'Work Sans',sans-serif;
-background:var(--papel);border:1px solid var(--linea);border-bottom:3px solid var(--tinta);border-radius:3px}
-.letra.hueco{background:transparent}
-.figura{color:var(--ambar-osc);max-width:120px;height:auto}
-.rejilla{--celda:min(40px,calc((100vw - 30px) / var(--lado)));border-collapse:collapse;margin:8px 0;
-background:var(--papel);table-layout:fixed}
-.rejilla td{width:var(--celda);height:var(--celda);min-width:var(--celda);border:1px solid var(--linea);
-text-align:center;vertical-align:middle;padding:0;font:700 20px 'Work Sans',sans-serif}
-.lista{columns:2;padding-left:22px;margin:8px 0}
-.lista li{margin:2px 0;letter-spacing:.06em}
-.ranuras{display:flex;flex-wrap:wrap;gap:6px 14px}
-.ranuras .letra{width:26px;height:34px}
-details{margin:24px 0;background:var(--papel);border:1px solid var(--linea);border-radius:8px;padding:4px 14px}
-summary{min-height:44px;display:flex;align-items:center;font-weight:700;cursor:pointer}
-.sin-js{color:var(--gris)}
-.pie{margin-top:40px;color:var(--gris);border-top:1px solid var(--linea);padding-top:14px}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-"""
-
-
-def html_hoy(D, h, nota, imagen):
-    """La página /hoy/ con la historia escrita dentro (para buscadores y sin JavaScript). NUNCA lleva el final."""
+def html_hoy(D, h, nota, imagen, config):
+    """La página /hoy/ con la historia escrita dentro (para buscadores y sin JavaScript). NUNCA lleva el final.
+    Con JavaScript, hoy/juego.js pasa a la historia del día del dispositivo. config (#hoy-config) solo lleva
+    fechas: los días publicados, el primero de todos y, en una construcción de prueba, la fecha fijada."""
     url = f'{SITIO}/hoy/'
     tit_og = 'La historia del día · Libros de Edwin Zar'
     desc = ('Una historia real cada día, con una sopa de letras para descubrir su final escondido. '
@@ -420,21 +376,27 @@ def html_hoy(D, h, nota, imagen):
             + (svg_figura(h['frase_recorrido']) if pg.get('figura_visible') else '') + '</div>'
             f'<p class="sr">La frase, con las letras que ya se ven (los puntos son huecos): {e(visible_lector)}</p>'
             f'<h2>La cuadrícula</h2>'
-            f'<table class="rejilla" style="--lado:{int(cu["lado"])}"><caption class="sr">Cuadrícula de '
+            f'<table class="tabla" style="--lado:{int(cu["lado"])}"><caption class="sr">Cuadrícula de '
             f'{int(cu["lado"])} por {int(cu["lado"])} letras</caption><tbody>{filas}</tbody></table>'
             f'<p>{e(pg.get("indicaciones"))}</p>'
             f'<h2>{e(pg.get("rotulo_lista") or "Las palabras")}</h2>'
-            '<ul class="lista">' + ''.join(f'<li>{e(w)}</li>' for w in pg['lista']) + '</ul>'
+            '<ul class="lista-papel">' + ''.join(f'<li>{e(w)}</li>' for w in pg['lista']) + '</ul>'
             f'<h2>{e(h["pagina_cuadricula"].get("rotulo_final") or "El final del relato")}</h2>'
             f'<div class="ranuras" aria-hidden="true">{ranuras}</div>'
             '<p class="sin-js">Para jugar en la pantalla hace falta JavaScript. También puedes resolverla en papel.</p>')
-    cuerpo += ('<details><summary>Cómo se juega</summary><ol>' + ''.join(f'<li>{e(x)}</li>' for x in COMO_SE_JUEGA)
-               + '</ol></details>')
+    como = ('<details id="como"><summary>Cómo se juega</summary><ol>' + ''.join(f'<li>{e(x)}</li>' for x in COMO_SE_JUEGA)
+            + '</ol></details>')
+    prueba = ''
+    if config.get('fijo'):
+        prueba = (f'<p class="prueba">Versión de prueba: la fecha está fijada en el '
+                  f'{e(fecha_larga(config["fijo"], con_dia=True, con_anio=True))}. No es para publicar.</p>\n')
+    datos = json.dumps(config, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
     return (
         '<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f'<title>{e((h["titulo"] + " · ") if h else "")}La historia del día · Libros de Edwin Zar</title>\n'
         f'<meta name="description" content="{e(desc)}">\n<link rel="canonical" href="{url}">\n'
+        + ('<meta name="robots" content="noindex">\n' if config.get('fijo') else '') +
         f'<link rel="alternate" type="application/rss+xml" title="La historia del día" href="feed.xml">\n'
         f'<meta property="og:type" content="website">\n<meta property="og:site_name" content="Libros de Edwin Zar">\n'
         f'<meta property="og:locale" content="es_ES">\n<meta property="og:url" content="{url}">\n'
@@ -443,9 +405,12 @@ def html_hoy(D, h, nota, imagen):
         f'<meta name="twitter:image" content="{imagen}">\n'
         "<link rel=\"icon\" href=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E"
         "%3Ctext y='.9em' font-size='90'%3E📚%3C/text%3E%3C/svg%3E\">\n"
-        f'<style>{css_hoy()}</style>\n</head>\n<body>\n<main class="pagina" id="hoy" data-fecha="{e(h["fecha"]) if h else ""}">\n'
+        '<link rel="stylesheet" href="juego.css">\n</head>\n<body>\n'
+        f'<main class="pagina" id="hoy" data-fecha="{e(h["fecha"]) if h else ""}">\n'
         '<a class="volver" href="../">← Libros de Edwin Zar</a>\n'
-        f'{cuerpo}\n<p class="pie">{e(D.t("pie", "es"))}</p>\n</main>\n</body>\n</html>\n')
+        f'{prueba}<div id="vista">{cuerpo}</div>\n{como}\n<p class="pie">{e(D.t("pie", "es"))}</p>\n</main>\n'
+        f'<script type="application/json" id="hoy-config">{datos}</script>\n'
+        '<script src="juego.js" defer></script>\n</body>\n</html>\n')
 
 
 def xml_feed(dias, historias):
@@ -463,8 +428,10 @@ def xml_feed(dias, historias):
             '</description><language>es</language>' + items + '</channel></rss>\n')
 
 
-def paso_hoy(D, raiz, salida, fecha, dias, carpeta):
-    """Devuelve 0 si se publicó o se saltó con aviso; 1 si el validador falló (y entonces no se publica nada de /hoy/)."""
+def paso_hoy(D, raiz, salida, fecha, dias, carpeta, prueba=False):
+    """Devuelve 0 si se publicó o se saltó con aviso; 1 si el validador falló (y entonces no se publica nada de /hoy/).
+    Con prueba=True (--hoy-prueba), la página queda fijada en la fecha de la construcción, para jugar antes de tiempo:
+    esa carpeta no se sube como sitio definitivo."""
     destino = salida / 'hoy'
 
     def limpiar_generados():
@@ -531,11 +498,15 @@ def paso_hoy(D, raiz, salida, fecha, dias, carpeta):
         (destino / 'd' / f'{f}.json').write_text(json.dumps(historias[f], ensure_ascii=False, separators=(',', ':')),
                                                  encoding='utf-8')
     imagen = f'{SITIO}/hoy/compartir.jpg' if (raiz / 'hoy' / 'compartir.jpg').exists() else IMAGEN_COMPARTIR
-    (destino / 'index.html').write_text(html_hoy(D, portada, nota, imagen), encoding='utf-8')
+    config = {'dias': publicadas, 'primera': min(historias), 'fijo': hoy_iso if prueba else ''}
+    (destino / 'index.html').write_text(html_hoy(D, portada, nota, imagen, config), encoding='utf-8')
     (destino / 'feed.xml').write_text(xml_feed(hasta_hoy, historias), encoding='utf-8')
     rango = f'{publicadas[0]} … {publicadas[-1]}' if publicadas else 'ninguno'
     print(f'La historia del día (fecha {hoy_iso}, --hoy-dias {dias}): {len(publicadas)} días publicados ({rango}); '
           f'portada: {portada["fecha"] if portada else "aviso, aún no hay historias"}; feed: {len(hasta_hoy)} días.')
+    if prueba:
+        print(f'AVISO: construcción DE PRUEBA (--hoy-prueba): /hoy/ queda fijada en el {hoy_iso}. '
+              'Sirve para jugar antes de tiempo; NO la subas como sitio definitivo.')
     return 0
 
 
@@ -608,7 +579,7 @@ def main():
              "window.CONFIG.PAGO_COLOMBIA = 'contraentrega';"))
     print(f'Listo: {len(D.libros)} libros, {len(D.hotmart)} productos de Hotmart, páginas: {", ".join(escritas)}')
     # 4) «La historia del día» (/hoy/): al final, para que un fallo suyo no impida construir el resto
-    return paso_hoy(D, raiz, salida, fecha_hoy, dias_hoy, datos_hoy)
+    return paso_hoy(D, raiz, salida, fecha_hoy, dias_hoy, datos_hoy, prueba='--hoy-prueba' in sys.argv)
 
 
 if __name__ == '__main__':

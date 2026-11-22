@@ -18,7 +18,7 @@ Además: un mes con un defecto → no se publica nada de /hoy/ (y la construcci�
 sin privado/hoy/ → se salta con un aviso y el resto se construye igual.
 Antes de fiarse de los ceros, cada comprobación se prueba con un defecto plantado.
 """
-import copy, json, shutil, subprocess, sys, tempfile
+import copy, json, re, shutil, subprocess, sys, tempfile
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -40,7 +40,7 @@ def esperado(historias, fecha, dias):
     return sorted(f for f in historias if d - timedelta(days=7) <= date.fromisoformat(f) <= d + timedelta(days=dias))
 
 
-def revisar(salida, historias, fecha, dias, portada_esperada):
+def revisar(salida, historias, fecha, dias, portada_esperada, prueba=False):
     """Devuelve la lista de problemas encontrados en una construcción."""
     mal = []
     d = date.fromisoformat(fecha)
@@ -79,6 +79,24 @@ def revisar(salida, historias, fecha, dias, portada_esperada):
         mal.append(f'el feed tiene {items} días y deberían ser {len(hasta_hoy)}')
     if (salida / 'privado').exists():
         mal.append('privado/ está en la carpeta de salida')
+    # #hoy-config (para juego.js): solo fechas; los días publicados, el primero de todos y, en prueba, la fecha fijada.
+    m = re.search(r'<script type="application/json" id="hoy-config">(.*?)</script>', indice, re.S)
+    if indice and not m:
+        mal.append('falta #hoy-config en la portada')
+    elif m:
+        cfg = json.loads(m.group(1).replace('<\\/', '</'))
+        if set(cfg) != {'dias', 'primera', 'fijo'}:
+            mal.append(f'#hoy-config lleva otras cosas: {sorted(cfg)}')
+        if cfg.get('dias') != esp:
+            mal.append('#hoy-config no lista exactamente los días publicados')
+        if cfg.get('primera') != min(historias):
+            mal.append('#hoy-config no trae el primer día de todos')
+        if cfg.get('fijo') != (fecha if prueba else ''):
+            mal.append('la página está fijada en una fecha' if not prueba else 'la construcción de prueba no fija la fecha')
+        if prueba and ('noindex' not in indice or 'Versión de prueba' not in indice):
+            mal.append('la construcción de prueba no lleva su aviso ni noindex')
+        if not prueba and ('noindex' in indice or 'Versión de prueba' in indice):
+            mal.append('una construcción normal lleva el aviso de prueba o noindex')
     return mal
 
 
@@ -95,6 +113,10 @@ def plantados(salida, historias, fecha, dias, portada):
             (s / 'hoy' / 'feed.xml').read_text(encoding='utf-8').replace('</channel>', f'<item>{historias[otra]["titulo"]}</item></channel>'),
             encoding='utf-8'),
         'privado/ copiado en la salida': lambda s: (s / 'privado').mkdir(),
+        'una fecha de más en #hoy-config': lambda s: (s / 'hoy' / 'index.html').write_text(
+            (s / 'hoy' / 'index.html').read_text(encoding='utf-8').replace('"dias":[', '"dias":["2027-02-01",', 1), encoding='utf-8'),
+        'la página fijada en una fecha (construcción de prueba subida)': lambda s: (s / 'hoy' / 'index.html').write_text(
+            (s / 'hoy' / 'index.html').read_text(encoding='utf-8').replace('"fijo":""', f'"fijo":"{fecha}"', 1), encoding='utf-8'),
     }
     ok = 0
     for nombre, plantar in casos.items():
@@ -114,25 +136,26 @@ def main():
         raise SystemExit(__doc__)
     base = Path(sys.argv[1]).resolve()
     historias = {h['fecha']: h for h in json.loads(MES.read_text(encoding='utf-8'))['historias']}
-    escenarios = [  # (fecha simulada, --hoy-dias, portada esperada)
-        ('2026-12-01', 40, '2026-12-01'),
-        ('2026-12-15', 40, '2026-12-15'),
-        ('2026-12-31', 40, '2026-12-31'),
-        ('2026-11-30', 40, None),            # víspera del lanzamiento: aviso amable, ninguna historia en la portada
-        ('2026-12-01', 8, '2026-12-01'),     # subida semanal
+    escenarios = [  # (fecha simulada, --hoy-dias, portada esperada, construcción de prueba)
+        ('2026-12-01', 40, '2026-12-01', False),
+        ('2026-12-15', 40, '2026-12-15', False),
+        ('2026-12-31', 40, '2026-12-31', False),
+        ('2026-11-30', 40, None, False),            # víspera del lanzamiento: aviso amable, ninguna historia en la portada
+        ('2026-12-01', 8, '2026-12-01', False),     # subida semanal
+        ('2026-12-07', 0, '2026-12-07', True),      # construcción de prueba (--hoy-prueba): fijada en el 7, días 1 a 7
     ]
     fallos = 0
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        for i, (fecha, dias, portada) in enumerate(escenarios):
+        for i, (fecha, dias, portada, prueba) in enumerate(escenarios):
             salida = tmp / f'e{i}'
-            cod, texto = construir(salida, '--hoy-fecha', fecha, '--hoy-dias', str(dias))
-            mal = revisar(salida, historias, fecha, dias, portada) if cod == 0 else [f'la construcción salió con {cod}']
+            cod, texto = construir(salida, '--hoy-fecha', fecha, '--hoy-dias', str(dias), *(['--hoy-prueba'] if prueba else []))
+            mal = revisar(salida, historias, fecha, dias, portada, prueba) if cod == 0 else [f'la construcción salió con {cod}']
             resto = comparar(base, salida, silencioso=True)
             n = len(list((salida / 'hoy' / 'd').glob('*.json'))) if (salida / 'hoy' / 'd').exists() else 0
             feed = (salida / 'hoy' / 'feed.xml').read_text(encoding='utf-8').count('<item>') if (salida / 'hoy' / 'feed.xml').exists() else 0
             estado = 'OK' if not mal and not resto else 'FALLO'
-            print(f'{fecha} (--hoy-dias {dias}): {n} JSON publicados (esperados {len(esperado(historias, fecha, dias))}), '
+            print(f'{fecha} (--hoy-dias {dias}{", --hoy-prueba" if prueba else ""}): {n} JSON publicados (esperados {len(esperado(historias, fecha, dias))}), '
                   f'feed {feed} días, portada {portada or "aviso"} · resto del sitio '
                   f'{"igual" if not resto else "DISTINTO"} → {estado}')
             for m in mal + resto:
