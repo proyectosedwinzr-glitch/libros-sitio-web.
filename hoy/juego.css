@@ -103,7 +103,9 @@ button.b:focus-visible{outline:3px solid var(--ambar);outline-offset:2px}
 .c:focus{outline:none}
 .c:focus-visible{outline:3px solid var(--ambar);outline-offset:-3px}
 .c.on{background:var(--c-palabra);border-radius:6px}
-.c.fr{background:var(--c-frase);border-radius:6px;font-weight:700}
+.c.fr{border-radius:6px;font-weight:700}
+.c.fr:not(.on){background:var(--c-frase)}
+.c.on.fr{background:linear-gradient(135deg,var(--c-palabra) 50%,var(--c-frase) 50%)}   /* de una palabra y de la frase */
 .c.sobra{font-weight:700;box-shadow:inset 0 0 0 2px var(--oscuro)}
 .c.sobra.pulso{animation:pulso 1.6s ease infinite}
 .c.sobra.leida{color:#fff;background:var(--oscuro);box-shadow:none}
@@ -126,6 +128,7 @@ svg.trazo polyline{fill:none;stroke:var(--ambar-osc);stroke-opacity:.42;stroke-l
   font-size:18px;line-height:1;color:#fff}
 .pal.hecha .w{text-decoration:line-through;color:var(--gris)}
 .pal.hecha .marca{background:var(--verde);border-color:var(--verde)}
+.ayuda-final{margin:10px 0 0;color:var(--gris)}
 .acc-msg{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .acc-msg p{margin:0}
 .final-texto{font:italic 21px/1.55 'Lora',Georgia,serif;margin:18px 0 0;padding:16px 18px;border-left:4px solid var(--ambar);

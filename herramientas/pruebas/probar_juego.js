@@ -17,11 +17,11 @@
  * 5. Comportamiento: guardado al recargar, «Esta semana», «Días anteriores», pistas escalonadas, escribir la frase,
  *    el día que falta (nota amable y el último publicado), la página HTML que da Cloudflare cuando falta un archivo,
  *    antes del lanzamiento, fechas en la dirección, la fecha según la hora del dispositivo y la página sin JavaScript.
- * Con --prueba, antes planta defectos que tienen que saltar (regla 7 de CLAUDE.md): 10 en la página (final distinto,
+ * Con --prueba, antes planta defectos que tienen que saltar (regla 7 de CLAUDE.md): 11 en la página (final distinto,
  * palabra en otras casillas, casillas chicas o grandes, texto y botón chicos, tercero, error de JavaScript, el final a la
- * vista, imagen sin texto alternativo) y 9 en una copia de juego.js servida en lugar de la buena (semana desde el domingo,
+ * vista, imagen sin texto alternativo, letras compartidas sin pintar) y 11 en una copia de juego.js servida en lugar de la buena (semana desde el domingo,
  * pistas sin escalonar, fecha en UTC, JSON de otro día aceptado, días futuros, sin guardado, sin aviso de lanzamiento,
- * «Empezar de nuevo» sin confirmar y sin nota amable): cada uno lo tiene que detectar la comprobación que lo vigila.
+ * toques sueltos que estropean la selección, «Empezar de nuevo» sin confirmar y sin nota amable): cada uno lo tiene que detectar la comprobación que lo vigila.
  * Sale con 0 si todo va bien; 1 si algo falla; 2 si un defecto plantado no salta.
  */
 'use strict';
@@ -216,6 +216,8 @@ async function resolverDia(nav, base, h, ancho, opciones = {}) {
         for (const x of cuales) await tocar(page, x, tactil);
         const hecha = await page.locator('#lista .pal').nth(i).getAttribute('class');
         if (!/\bhecha\b/.test(hecha)) { problemas.push(['palabra', `${p.w} no se marcó al tocarla`]); await pulsar(page, '#limpiar', tactil); }
+        const sinPintar = await page.$$eval('#rejilla > button', (bs, cs) => cs.filter(x => !bs[x].classList.contains('on')).length, p.celdas);
+        if (sinPintar) problemas.push(['pintado', `${p.w}: ${sinPintar} de sus letras no se pintan al encontrarla`]);
       }
     };
     const frase = async () => {
@@ -231,6 +233,8 @@ async function resolverDia(nav, base, h, ancho, opciones = {}) {
       const todas = (await textos(page, '#patron .letra')).join('');
       if (todas !== S.frase.map(S.letra).join('')) problemas.push(['frase', 'la frase encontrada no se ve completa']);
       if (!(await page.textContent('#cuenta')).includes('encontrada')) problemas.push(['frase', 'la frase no cuenta como encontrada']);
+      const sinPintarF = await page.$$eval('#rejilla > button', (bs, cs) => cs.filter(x => !bs[x].classList.contains('fr')).length, S.frase);
+      if (sinPintarF) problemas.push(['pintado', `la frase: ${sinPintarF} de sus letras no se pintan al encontrarla`]);
     };
     if (orden === 'frase') { await frase(); await palabras(); } else { await palabras(); await frase(); }
 
@@ -350,6 +354,30 @@ async function comportamiento(nav, base, mes, raiz) {
     await ctx.close();
   });
 
+  // Un toque suelto no estropea la selección; uno de más en medio de la frase no borra lo recorrido.
+  await bloque('Toques sueltos', async () => {
+    const ctx = await contexto(nav, 390);
+    const { page, reg } = await abrir(ctx, base, '/hoy/', instante('2026-12-01'));
+    await listo(page, '2026-12-01');
+    const S = solucion(H['2026-12-01']), w = S.palabras[0];
+    await tocar(page, S.sobran[0], true);                     // un toque suelto (una letra que sobra)
+    await tocar(page, w.celdas[0], true); await tocar(page, w.celdas[w.celdas.length - 1], true);
+    comprobar((await page.locator('#lista .pal').nth(0).getAttribute('class')).includes('hecha'),
+      `Un toque suelto antes no estropea la palabra: ${w.w} se encuentra con su primera y su última letra`);
+    for (const x of S.frase.slice(0, 4)) await tocar(page, x, true);
+    await tocar(page, S.sobran[1], true);                     // un toque de más en medio de la frase
+    const aviso = (await page.textContent('#aviso')).trim();
+    const vistas = (await textos(page, '#patron .letra')).slice(0, 4).join('');
+    comprobar(aviso.startsWith('Esa letra no sigue tu selección') && vistas === S.frase.slice(0, 4).map(S.letra).join(''),
+      'Un toque de más en medio de la frase se ignora, con un aviso, y no se pierde lo recorrido');
+    for (const x of S.frase.slice(4)) await tocar(page, x, true);
+    comprobar((await page.textContent('#cuenta')).includes('encontrada'), 'Y la frase se termina sin volver a empezar');
+    await tocar(page, S.palabras[1].celdas[0], true); await tocar(page, S.palabras[1].celdas[1], true);
+    await tocar(page, S.palabras[1].celdas[1], true);         // tocar otra vez la última letra elegida la quita
+    comprobar((await page.locator('#rejilla > button.sel').count()) === 1 && !reg.errores.length, 'Tocar otra vez la última letra elegida la quita');
+    await ctx.close();
+  });
+
   // «Empezar de nuevo» se confirma en la página: el primer toque pregunta y el segundo borra (las pistas se quedan).
   await bloque('Empezar de nuevo', async () => {
     const ctx = await contexto(nav, 390);
@@ -439,6 +467,13 @@ function defectos(mes, raiz) {
     ['una petición a un dominio de terceros', 'tercero', { antes: async page => page.addInitScript(() => { window.addEventListener('load', () => { fetch('https://tercero.example/x').catch(() => {}); }); }) }],
     ['un error de JavaScript', 'errorjs', { antes: async page => page.addInitScript(() => { window.addEventListener('load', () => setTimeout(() => { throw new Error('error plantado'); }, 0)); }) }],
     ['el final a la vista antes de resolver', 'final', { despues: async page => { await listo(page, '2026-12-01'); await page.evaluate(m => { const p = document.createElement('p'); p.textContent = m; document.querySelector('.relato').after(p); }, h1.mensaje); } }],
+    ['las letras compartidas, pintadas solo para una palabra (juego.js cambiado)', 'pintado', { antes: async page => {
+      const juego = fs.readFileSync(path.join(raiz, 'hoy', 'juego.js'), 'utf8');
+      const viejo = 'const suyas = (DUENOS.get(x) || []).filter(';
+      if (juego.split(viejo).length !== 2) throw new Error('la sustitución del defecto plantado no encuentra su cadena');
+      const malo = juego.replace(viejo, 'const suyas = (DUENOS.get(x) || []).slice(-1).filter(');
+      await page.route('**/hoy/juego.js', r => r.fulfill({ status: 200, contentType: 'text/javascript', body: malo }));
+    } }],
     ['una imagen sin texto alternativo', 'axe', { despues: async page => { await listo(page, '2026-12-01'); await page.evaluate(() => { const i = document.createElement('img'); i.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACw='; i.width = 50; i.height = 50; document.querySelector('.relato').appendChild(i); }); } }],
   ];
 }
@@ -453,6 +488,8 @@ const MUTACIONES = [
   ['enseña días futuros puestos en la dirección', 'h < HOY && h >= sumar(HOY, -7)', 'h >= sumar(HOY, -7)', 'día futuro'],
   ['no guarda nada', 'localStorage.setItem(GUARDA, JSON.stringify(PROG));', 'void 0;', 'Esta semana'],
   ['antes del lanzamiento deja la historia escrita', 'if (CFG.primera && HOY < CFG.primera)', 'if (false)', '30 de noviembre'],
+  ['un toque suelto estropea la selección', 'sel = [x];', 'void 0;', 'toque suelto antes'],
+  ['un toque de más borra el recorrido de la frase', 'if (antes.length >= 3) {', 'if (false) {', 'toque de más en medio de la frase'],
   ['«Empezar de nuevo» borra al primer toque', 'if (!b.dataset.seguro) {', 'if (false) {', 'primer toque solo pregunta'],
   ['sin nota amable el día que falta', '"La historia de hoy todavía no está lista. Mientras tanto, aquí tienes la del "', '"Aquí tienes la del "', '1 de enero'],
 ];

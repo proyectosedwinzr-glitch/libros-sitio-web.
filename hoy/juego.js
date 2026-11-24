@@ -185,10 +185,10 @@
     // Lo guardado, saneado (solo posiciones que existen en esta historia).
     P.w = P.w.filter((x, j, a) => Number.isInteger(x) && x >= 0 && x < PAL.length && a.indexOf(x) === j);
     P.m = P.m.filter((x, j, a) => Number.isInteger(x) && x >= 0 && x < LIBRES.length && a.indexOf(x) === j);
-    const DUENO = new Map(), LIBRE = new Map();
-    PAL.forEach(p => p.cs.forEach(x => DUENO.set(x, p)));
+    // Una letra puede ser de dos palabras (se cruzan) o de una palabra y de la frase: se guardan todas sus palabras.
+    const DUENOS = new Map(), LIBRE = new Map();
+    PAL.forEach(p => p.cs.forEach(x => { if (!DUENOS.has(x)) DUENOS.set(x, []); DUENOS.get(x).push(p); }));
     LIBRES.forEach((x, n) => LIBRE.set(x, n));
-    const LARGO = Math.max.apply(null, [FR.size].concat(PAL.map(p => p.set.size)));
     const nv = /^nivel(\d)$/.exec(H.tipo || "");
     let sel = [], etapa = {}, ultima = -1, primeraVez = true, prevK = 0, prevVer = false, tDestello = 0;
     const todoEncontrado = () => P.f && P.w.length === PAL.length;
@@ -238,6 +238,7 @@
         '<div class="bloque-final" id="bloque-final">' +
           "<h2>" + esc((H.pagina_cuadricula || {}).rotulo_final || "El final del relato") + "</h2>" +
           '<div class="ranuras" id="ranuras" aria-hidden="true"></div><p class="sr" id="ranuras-sr"></p>' +
+          '<p class="ayuda-final" id="ayuda-final"></p>' +
           '<div class="acc-msg" id="acc-msg" hidden><p>Toca las letras con aro: cada una cae en su hueco.</p>' +
             '<button class="b" type="button" id="leer-todo">Completar el final</button></div>' +
           '<div class="resuelta" id="resuelta" hidden></div>' +
@@ -308,18 +309,20 @@
     function pintarRejilla() {
       const todo = todoEncontrado(), leidas = new Set(P.m), S = new Set(sel);
       celdas.forEach((b, x) => {
-        let cls = "c", estado = "";
-        const p = DUENO.get(x), n = LIBRE.get(x);
-        if (p && P.w.indexOf(p.i) >= 0) { cls += " on"; estado = ", de " + p.w; }
-        else if (FR.has(x) && P.f) { cls += " fr"; estado = ", de la frase"; }
-        else if (todo && n !== undefined) {
-          if (leidas.has(n)) { cls += " sobra leida"; estado = ", ya está en el final"; }
-          else { cls += " sobra pulso"; estado = ", letra que sobra"; }
+        let cls = "c";
+        const estado = [], n = LIBRE.get(x);
+        const suyas = (DUENOS.get(x) || []).filter(p => P.w.indexOf(p.i) >= 0);   // todas las palabras encontradas que pasan por aquí
+        if (suyas.length) { cls += " on"; estado.push("de " + suyas.map(p => p.w).join(" y de ")); }
+        if (FR.has(x) && P.f) { cls += " fr"; estado.push("de la frase"); }
+        if (todo && n !== undefined) {
+          if (leidas.has(n)) { cls += " sobra leida"; estado.push("ya está en el final"); }
+          else { cls += " sobra pulso"; estado.push("letra que sobra"); }
         }
         if (S.has(x)) cls += " sel";
         if (b.className !== cls) b.className = cls;
         b.setAttribute("aria-pressed", S.has(x) ? "true" : "false");
-        b.setAttribute("aria-label", letra(x) + ", fila " + (Math.floor(x / N) + 1) + ", columna " + (x % N + 1) + estado);
+        b.setAttribute("aria-label", letra(x) + ", fila " + (Math.floor(x / N) + 1) + ", columna " + (x % N + 1) +
+          (estado.length ? ", " + estado.join(", ") : ""));
       });
       $("cuenta").innerHTML = "<b>" + P.w.length + "</b> de " + PAL.length + " palabras · la frase: " +
         (P.f ? "<b>✓ encontrada</b>" : "pendiente");
@@ -355,6 +358,12 @@
       const lleno = completo();
       $("ranuras-sr").textContent = lleno ? "" : "El final: " + (todo ? P.m.length : 0) + " de " + LIBRES.length + " letras en su sitio.";
       $("acc-msg").hidden = !(todo && !lleno);
+      // Mientras falte algo por encontrar, se explica cuándo y cómo se completa el final.
+      $("ayuda-final").hidden = todo;
+      $("ayuda-final").textContent = todo ? "" : (P.e && !P.f
+        ? "La frase ya está escrita arriba, pero falta encontrarla en la cuadrícula. "
+        : "") + "Cuando encuentres en la cuadrícula las " + PAL.length + " palabras y la frase, " +
+        "las letras que sobran latirán: tócalas y caerán aquí.";
       if (lleno && !P.r) { P.r = true; guardar(); }
       const res = $("resuelta");
       if (lleno && res.hidden) {
@@ -399,6 +408,10 @@
       return true;
     }
 
+    // Lo que queda por encontrar: las palabras que faltan y, si falta, la frase.
+    const quedan = () => PAL.filter(p => P.w.indexOf(p.i) < 0).map(p => p.set).concat(P.f ? [] : [FR]);
+    const encaja = lista => quedan().some(set => lista.every(y => set.has(y)));
+
     function tocar(x) {
       if (todoEncontrado()) {
         const n = LIBRE.get(x);
@@ -408,7 +421,12 @@
         return;
       }
       const i = sel.indexOf(x);
-      if (i >= 0) sel.splice(i, 1); else sel.push(x);
+      if (i >= 0) {   // tocar una letra ya elegida la quita, y con ella las que se eligieron después
+        sel = sel.slice(0, i); avisar(""); pintarRejilla(); pintarPatron();
+        return;
+      }
+      const antes = sel.slice();
+      sel.push(x);
       const S = new Set(sel);
       const igual = set => S.size === set.size && sel.every(y => set.has(y));
       if (!P.f && igual(FR)) {
@@ -423,11 +441,17 @@
         if (!terminado()) avisar("¡" + hit.w + "!");
         return;
       }
-      if (sel.length > LARGO) {
-        sel.forEach(y => celdas[y].classList.add("no"));
-        setTimeout(() => { sel = []; pintarRejilla(); pintarPatron(); }, 350);
-        avisar("Esa selección no forma ninguna palabra ni la frase.");
-        return;
+      if (!encaja(sel)) {
+        // Este toque no encaja con lo elegido antes (no hay palabra ni frase que lleve todas esas letras).
+        // Un recorrido de 3 letras o más se respeta y se ignora el toque; si no, se empieza de nuevo desde
+        // esta letra: así un toque suelto no estropea la palabra siguiente.
+        if (antes.length >= 3) {
+          sel = antes;
+          celdas[x].classList.remove("no"); void celdas[x].offsetWidth; celdas[x].classList.add("no");
+          avisar("Esa letra no sigue tu selección. Para empezar otra, toca «Quitar selección».");
+          return;
+        }
+        sel = [x];
       }
       const k = prefijo();
       avisar(!P.f && k > 0 ? "Vas bien con la frase: " + k + " de " + FR.size + " letras." : "");

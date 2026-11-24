@@ -199,12 +199,12 @@ compartir en la etapa 3); no se cobran.
 
 | Prueba | Resultado |
 |---|---|
-| `probar_juego.js`: el 1 (nivel 1, 9 × 9), el 3 y el 4 de diciembre (nivel 2, 10 × 10), en 390, 820 y 1280 px | 9 de 9 resueltas tocando la pantalla (palabras por su primera y su última letra, y letra a letra; la frase antes y después de las palabras; las que sobran en desorden y con «Completar el final»); el final exacto, letra a letra y en limpio |
+| `probar_juego.js`: el 1 (nivel 1, 9 × 9), el 3 y el 4 de diciembre (nivel 2, 10 × 10), en 390, 820 y 1280 px | 9 de 9 resueltas tocando la pantalla (palabras por su primera y su última letra, y letra a letra; la frase antes y después de las palabras; las que sobran en desorden y con «Completar el final»); el final exacto, letra a letra y en limpio; al encontrar cada palabra y la frase, todas sus letras quedan pintadas, también las compartidas |
 | Medidas en esas 9 | casillas de 40 px (9 × 9) y 36 px (10 × 10) en 390 px, de 44 px en 820 y 1280; botones y enlaces de 44 px o más; ningún texto de menos de 18 px; sin desborde |
 | axe, red y errores, antes y después de resolver | sin infracciones; ninguna petición a terceros; ningún error de JavaScript |
 | Guardado | al recargar, sigue resuelta |
-| Comportamiento (26 comprobaciones) | semana (1 de 6 el 4 de diciembre; 0 de 7 el lunes 7), días anteriores, pistas escalonadas y contadas, la frase escrita, «Empezar de nuevo» en dos toques, el 1 de enero sin enero, la página de Cloudflare cuando falta un archivo, el JSON de otro día, fechas en la dirección, Madrid y Bogotá en el mismo instante, el 30 de noviembre y sin JavaScript: todo bien |
-| Defectos plantados (`--prueba`) | 19/19 detectados: 10 en la página y 9 en copias de `juego.js` con un fallo a propósito |
+| Comportamiento (30 comprobaciones) | semana (1 de 6 el 4 de diciembre; 0 de 7 el lunes 7), días anteriores, pistas escalonadas y contadas, la frase escrita, toques sueltos, «Empezar de nuevo» en dos toques, el 1 de enero sin enero, la página de Cloudflare cuando falta un archivo, el JSON de otro día, fechas en la dirección, Madrid y Bogotá en el mismo instante, el 30 de noviembre y sin JavaScript: todo bien |
+| Defectos plantados (`--prueba`) | 22/22 detectados: 11 en la página y 11 en copias de `juego.js` con un fallo a propósito (entre ellos, el de las letras compartidas del 24 de noviembre) |
 | `revisar_juego.py` | nada del vol. 1; 6/6 defectos plantados |
 | `probar_hoy.py` (etapa 1, otra vez, con la página nueva) | todo bien; 7/7 defectos plantados (2 nuevos: una fecha de más en `#hoy-config` y una construcción de prueba subida); escenario nuevo con `--hoy-prueba` |
 | El resto del sitio | idéntico byte a byte en todos los escenarios |
@@ -215,16 +215,44 @@ Las capturas (antes y después de resolver, en los tres anchos) se revisaron a o
 
 1. **Arrastrar el dedo.** La especificación dice que el vol. 1 se juega «arrastrando, o tocando la primera y la última
    letra», pero el código del vol. 1 no tiene arrastre: se toca letra a letra, o la primera y la última de una palabra.
-   He dejado exactamente eso (lo probado con los 56 retos). Añadir el arrastre sería un cambio: **pregunta pendiente**.
+   He dejado exactamente eso (lo probado con los 56 retos). Añadir el arrastre sería un cambio.
    En un móvil, arrastrar sobre una cuadrícula que ocupa todo el ancho choca con desplazar la página.
+   **Decidido por el autor el 24 de noviembre: sin arrastre.**
 2. **44 px y las casillas.** `CLAUDE.md` pide «casillas y botones de 44 px o más en un móvil de 390 px», y `ESPEC.md`,
    casillas de 36 a 40 px en 390 px. En 390 px no caben 10 casillas de 44 px (440 px). He aplicado 44 px a botones,
    campos y enlaces, y de 36 a 40 px a las casillas, como dice `ESPEC.md`.
 3. **Las fuentes, al resolver.** No están en la lista de §2 de la especificación, pero el tono de la casa es riguroso y
-   las historias llegan con dos fuentes. Van en un desplegable, solo al resolver. Se quitan con una línea.
+   las historias llegan con dos fuentes. Van en un desplegable, solo al resolver.
+   **Decidido por el autor el 24 de noviembre: se quedan.**
 4. **Sin «Ver solución»**, por lo dicho arriba. «Empezar de nuevo» se confirma en la propia página, en dos toques
    (24 de noviembre): las ventanas de confirmación del navegador no funcionan en algunos navegadores que van dentro
    de otras aplicaciones, como el de WhatsApp, ni en la página de prueba de Claude.
+
+### Correcciones tras la primera prueba del autor · 24 de noviembre
+
+El autor jugó en su móvil y avisó: «No funcionan siempre a la primera. Tuve que seleccionar las palabras varias veces.
+El mensaje final no se deja resolver».
+
+- **El fallo (mío):** en 28 de los 31 días hay letras compartidas (28 entre dos palabras que se cruzan y 41 entre una
+  palabra y la frase). El juego pintaba cada letra compartida para una sola de sus palabras, así que al encontrar la
+  otra parecía que le faltaba una letra y que la selección no había funcionado. El vol. 1 sí las pintaba bien; el fallo
+  entró al adaptarlo. **Corregido:** se pintan para todas sus palabras; si es de una palabra y de la frase, lleva los dos
+  colores, partida en diagonal. Lo vigila una comprobación nueva en cada una de las 9 partidas, con su defecto plantado.
+- **Selección más tolerante:** si un toque no encaja con lo elegido (no hay palabra ni frase que lleve todas esas
+  letras), se empieza de nuevo desde esa letra: un toque suelto ya no estropea la palabra siguiente, y la primera y la
+  última letra funcionan aunque antes se haya tocado otra. Con 3 letras o más ya elegidas (por ejemplo, a media frase),
+  el toque que no encaja se ignora, con un aviso, para no perder lo recorrido. Tocar otra vez la última letra elegida la
+  quita. Es una pequeña ayuda (al empezar de nuevo se sabe que esas letras no van juntas); con pistas sin límite, no
+  cambia nada.
+- **El final, explicado:** mientras falte algo por encontrar, bajo los huecos del final se lee «Cuando encuentres en la
+  cuadrícula las N palabras y la frase, las letras que sobran latirán: tócalas y caerán aquí»; si la frase solo se ha
+  escrito, se avisa de que falta encontrarla en la cuadrícula.
+- **Pendiente en la conversación del motor (contenido, regla 2):** el autor pide finales un poco más cortos y unas tres
+  palabras más en la lista. Propuesta enviada al autor para el motor: final de 15 a 25 letras (unas 3 a 5 palabras),
+  lista de 7 a 9 palabras, cuadrícula de 9 × 9 o 10 × 10 como ahora (más grande no cabe en un móvil con casillas de
+  36 px). **Ojo:** el validador de aquí exige listas de 4 a 6 palabras; con el mes nuevo tiene que llegar también el
+  verificador nuevo del motor (`validar_hoy.py`), o el paso `hoy` no publicará nada. Mientras tanto, diciembre tal como
+  está funciona con el juego corregido.
 
 ### Lo que estas comprobaciones NO cubren
 
