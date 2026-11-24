@@ -460,8 +460,21 @@
       destello(xs); avisar(t);
     };
     $("limpiar").onclick = () => { sel = []; avisar(""); pintarRejilla(); pintarPatron(); };
+    // Se confirma en la propia página (el primer toque pregunta, el segundo borra): las ventanas del navegador
+    // (confirm) no funcionan en algunos navegadores dentro de otras aplicaciones, como el de WhatsApp.
+    let tReinicio = 0;
+    const PREGUNTA = "¿Seguro? Se borra lo encontrado en esta historia. Para confirmarlo, toca «Sí, empezar de nuevo».";
     $("reiniciar").onclick = () => {
-      if (!window.confirm("¿Empezar de nuevo esta historia? Se borra lo encontrado.")) return;
+      const b = $("reiniciar");
+      clearTimeout(tReinicio);
+      if (!b.dataset.seguro) {
+        b.dataset.seguro = "1"; b.textContent = "Sí, empezar de nuevo"; b.classList.add("osc"); avisar(PREGUNTA);
+        tReinicio = setTimeout(() => {
+          delete b.dataset.seguro; b.textContent = "Empezar de nuevo"; b.classList.remove("osc");
+          if ($("aviso").textContent === PREGUNTA) avisar("");
+        }, 6000);
+        return;
+      }
       PROG[H.fecha] = {w: [], f: false, e: false, m: [], p: P.p, r: P.r}; guardar();
       verHistoria(H, M, "", false);
     };

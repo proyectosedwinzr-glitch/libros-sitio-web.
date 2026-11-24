@@ -146,7 +146,8 @@ node herramientas/pruebas/capturas.js /tmp/despues /hoy/
   escribir la frase completa («Todavía no. Relee el relato: la frase está ahí, tal cual.», sin regañar).
 - «Cómo se juega» (desplegable, el texto aprobado) entre la frase y la cuadrícula.
 - La cuadrícula, con la cuenta («2 de 5 palabras · la frase: pendiente»), los botones «Pista», «Quitar selección» y
-  «Empezar de nuevo» (pide confirmación), las `indicaciones` del JSON y la lista de palabras.
+  «Empezar de nuevo» (se confirma en la propia página: el primer toque pregunta y el segundo borra), las
+  `indicaciones` del JSON y la lista de palabras.
 - **Colores:** como dice «Cómo se juega», un color para las palabras (verde claro) y otro para la frase (ámbar claro).
   La frase, además, va en negrita y con la línea de su recorrido encima; las que sobran llevan un aro; en la lista, las
   encontradas se tachan y llevan ✓. Nada depende solo del color.
@@ -202,8 +203,8 @@ compartir en la etapa 3); no se cobran.
 | Medidas en esas 9 | casillas de 40 px (9 × 9) y 36 px (10 × 10) en 390 px, de 44 px en 820 y 1280; botones y enlaces de 44 px o más; ningún texto de menos de 18 px; sin desborde |
 | axe, red y errores, antes y después de resolver | sin infracciones; ninguna petición a terceros; ningún error de JavaScript |
 | Guardado | al recargar, sigue resuelta |
-| Comportamiento (24 comprobaciones) | semana (1 de 6 el 4 de diciembre; 0 de 7 el lunes 7), días anteriores, pistas escalonadas y contadas, la frase escrita, el 1 de enero sin enero, la página de Cloudflare cuando falta un archivo, el JSON de otro día, fechas en la dirección, Madrid y Bogotá en el mismo instante, el 30 de noviembre y sin JavaScript: todo bien |
-| Defectos plantados (`--prueba`) | 18/18 detectados: 10 en la página y 8 en copias de `juego.js` con un fallo a propósito |
+| Comportamiento (26 comprobaciones) | semana (1 de 6 el 4 de diciembre; 0 de 7 el lunes 7), días anteriores, pistas escalonadas y contadas, la frase escrita, «Empezar de nuevo» en dos toques, el 1 de enero sin enero, la página de Cloudflare cuando falta un archivo, el JSON de otro día, fechas en la dirección, Madrid y Bogotá en el mismo instante, el 30 de noviembre y sin JavaScript: todo bien |
+| Defectos plantados (`--prueba`) | 19/19 detectados: 10 en la página y 9 en copias de `juego.js` con un fallo a propósito |
 | `revisar_juego.py` | nada del vol. 1; 6/6 defectos plantados |
 | `probar_hoy.py` (etapa 1, otra vez, con la página nueva) | todo bien; 7/7 defectos plantados (2 nuevos: una fecha de más en `#hoy-config` y una construcción de prueba subida); escenario nuevo con `--hoy-prueba` |
 | El resto del sitio | idéntico byte a byte en todos los escenarios |
@@ -221,7 +222,9 @@ Las capturas (antes y después de resolver, en los tres anchos) se revisaron a o
    campos y enlaces, y de 36 a 40 px a las casillas, como dice `ESPEC.md`.
 3. **Las fuentes, al resolver.** No están en la lista de §2 de la especificación, pero el tono de la casa es riguroso y
    las historias llegan con dos fuentes. Van en un desplegable, solo al resolver. Se quitan con una línea.
-4. **Sin «Ver solución»**, por lo dicho arriba; «Empezar de nuevo» pide confirmación.
+4. **Sin «Ver solución»**, por lo dicho arriba. «Empezar de nuevo» se confirma en la propia página, en dos toques
+   (24 de noviembre): las ventanas de confirmación del navegador no funcionan en algunos navegadores que van dentro
+   de otras aplicaciones, como el de WhatsApp, ni en la página de prueba de Claude.
 
 ### Lo que estas comprobaciones NO cubren
 
@@ -252,7 +255,10 @@ git worktree add /tmp/base origin/main && python3 -I /tmp/base/herramientas/cons
 python3 -I herramientas/pruebas/probar_hoy.py /tmp/antes
 ```
 
-Para jugar antes de tiempo (carpeta de prueba, fijada en el lunes 7 de diciembre, con los días 1 a 7):
+Para jugar antes de tiempo (carpeta de prueba, fijada en el lunes 7 de diciembre, con los días 1 a 7). El 24 de
+noviembre se puso también, para el autor, en una página privada de Claude, que solo se abre con su cuenta: la misma construcción,
+con el estilo, el código y las fuentes dentro de la página y los 7 días aparte. Se probó antes en local con una
+política de seguridad parecida y dentro de un marco aislado (allí no se puede guardar, pero se juega igual).
 
 ```
 python3 herramientas/construir.py --salida /tmp/prueba-hoy --hoy-fecha 2026-12-07 --hoy-dias 0 --hoy-prueba

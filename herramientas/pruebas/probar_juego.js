@@ -19,9 +19,9 @@
  *    antes del lanzamiento, fechas en la dirección, la fecha según la hora del dispositivo y la página sin JavaScript.
  * Con --prueba, antes planta defectos que tienen que saltar (regla 7 de CLAUDE.md): 10 en la página (final distinto,
  * palabra en otras casillas, casillas chicas o grandes, texto y botón chicos, tercero, error de JavaScript, el final a la
- * vista, imagen sin texto alternativo) y 8 en una copia de juego.js servida en lugar de la buena (semana desde el domingo,
- * pistas sin escalonar, fecha en UTC, JSON de otro día aceptado, días futuros, sin guardado, sin aviso de lanzamiento y
- * sin nota amable): cada uno lo tiene que detectar la comprobación que lo vigila.
+ * vista, imagen sin texto alternativo) y 9 en una copia de juego.js servida en lugar de la buena (semana desde el domingo,
+ * pistas sin escalonar, fecha en UTC, JSON de otro día aceptado, días futuros, sin guardado, sin aviso de lanzamiento,
+ * «Empezar de nuevo» sin confirmar y sin nota amable): cada uno lo tiene que detectar la comprobación que lo vigila.
  * Sale con 0 si todo va bien; 1 si algo falla; 2 si un defecto plantado no salta.
  */
 'use strict';
@@ -350,6 +350,25 @@ async function comportamiento(nav, base, mes, raiz) {
     await ctx.close();
   });
 
+  // «Empezar de nuevo» se confirma en la página: el primer toque pregunta y el segundo borra (las pistas se quedan).
+  await bloque('Empezar de nuevo', async () => {
+    const ctx = await contexto(nav, 390);
+    const { page, reg } = await abrir(ctx, base, '/hoy/', instante('2026-12-04'));
+    await listo(page, '2026-12-04');
+    const S = solucion(H['2026-12-04']);
+    await tocar(page, S.palabras[0].celdas[0], true); await tocar(page, S.palabras[0].celdas[S.palabras[0].celdas.length - 1], true);
+    await pulsar(page, '#pista', true);
+    await pulsar(page, '#reiniciar', true);
+    const etiqueta = (await page.textContent('#reiniciar')).trim();
+    comprobar(etiqueta === 'Sí, empezar de nuevo' && (await page.locator('#lista .pal.hecha').count()) === 1 && !reg.errores.length,
+      `«Empezar de nuevo»: el primer toque solo pregunta, en la página («${etiqueta}»), y no borra nada`);
+    await pulsar(page, '#reiniciar', true);
+    const g = (await guardado(page, '2026-12-04')) || {};
+    comprobar((await page.locator('#lista .pal.hecha').count()) === 0 && Array.isArray(g.w) && g.w.length === 0 && g.p === 1 &&
+      (await page.textContent('#reiniciar')).trim() === 'Empezar de nuevo', 'Al confirmar, se borra lo encontrado y se guardan las pistas pedidas');
+    await ctx.close();
+  });
+
   // El día que falta, la página HTML que da Cloudflare, antes del lanzamiento y fechas en la dirección.
   const casos = [
     ['1 de enero sin el archivo de enero: el último publicado, con una nota amable', '/hoy/', instante('2027-01-01'), '2026-12-31',
@@ -434,6 +453,7 @@ const MUTACIONES = [
   ['enseña días futuros puestos en la dirección', 'h < HOY && h >= sumar(HOY, -7)', 'h >= sumar(HOY, -7)', 'día futuro'],
   ['no guarda nada', 'localStorage.setItem(GUARDA, JSON.stringify(PROG));', 'void 0;', 'Esta semana'],
   ['antes del lanzamiento deja la historia escrita', 'if (CFG.primera && HOY < CFG.primera)', 'if (false)', '30 de noviembre'],
+  ['«Empezar de nuevo» borra al primer toque', 'if (!b.dataset.seguro) {', 'if (false) {', 'primer toque solo pregunta'],
   ['sin nota amable el día que falta', '"La historia de hoy todavía no está lista. Mientras tanto, aquí tienes la del "', '"Aquí tienes la del "', '1 de enero'],
 ];
 
