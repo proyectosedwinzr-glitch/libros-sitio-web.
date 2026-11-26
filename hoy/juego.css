@@ -134,6 +134,24 @@ svg.trazo polyline{fill:none;stroke:var(--ambar-osc);stroke-opacity:.42;stroke-l
 .final-texto{font:italic 21px/1.55 'Lora',Georgia,serif;margin:18px 0 0;padding:16px 18px;border-left:4px solid var(--ambar);
   background:var(--papel);border-radius:0 8px 8px 0}
 .resuelta .pistas-n{color:var(--gris);margin:10px 0 0}
+.acciones-fin{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0 0}
+.acciones-fin .msg{margin:0;flex:1 1 220px}
+.compartir-texto{display:block;width:100%;margin-top:6px;font:18px/1.4 'Work Sans',sans-serif;padding:8px 10px;
+  border:1px solid var(--gris);border-radius:8px;background:var(--papel);color:var(--tinta);resize:vertical}
+.mas-libro{margin:20px 0 0;padding:14px 16px;background:var(--ambar-claro);border-left:4px solid var(--ambar);border-radius:0 8px 8px 0}
+.mas-libro p{margin:0 0 10px}
+a.b{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:8px 16px;
+  border-radius:8px;font:700 18px 'Work Sans',sans-serif;text-decoration:none;background:var(--oscuro);color:#fff}
+a.b:hover{background:#343b57}
+a.b:focus-visible{outline:3px solid var(--ambar);outline-offset:2px}
+.correo{margin:20px 0 0;padding:14px 16px;border:1px solid var(--linea);border-radius:8px;background:var(--papel)}
+.correo h2{margin-top:0}
+.correo input[type=email],.correo input[type=text]{width:100%;max-width:420px;min-height:44px;font:18px 'Work Sans',sans-serif;
+  padding:8px 12px;border:1px solid var(--gris);border-radius:8px;background:#fff;color:var(--tinta)}
+.correo button,.correo input[type=submit]{min-height:44px;min-width:44px;font:700 18px 'Work Sans',sans-serif;border:0;
+  border-radius:8px;padding:8px 16px;background:var(--oscuro);color:#fff;cursor:pointer}
+.correo label{display:block;font-weight:700;margin:8px 0 4px}
+.correo-nota{color:var(--gris);margin:10px 0 0}
 .fuentes li{overflow-wrap:anywhere}
 
 /* días anteriores y la semana (sin rachas) */

@@ -14,6 +14,10 @@ body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Sans","Noto
 .vitrina a:hover{transform:translateY(-6px) rotate(-1deg)}
 .vitrina img{height:150px;aspect-ratio:2/3;object-fit:cover;border-radius:6px;box-shadow:0 6px 16px #0006;display:block}
 .top .subtit{margin-top:2px;font-size:clamp(15px,3.6vw,19px);color:#f5c542;opacity:1;font-weight:bold}
+/* Enlace a «La historia del día» (solo en los sitios que la llevan) */
+.top p.enlace-hoy{margin:14px auto 0;opacity:1}
+.enlace-hoy a{display:inline-flex;align-items:center;min-height:44px;padding:8px 18px;border-radius:999px;background:#fff8e6;color:#163a5b;font-weight:bold;text-decoration:none;box-shadow:0 2px 6px #0003}
+.enlace-hoy a:hover,.enlace-hoy a:focus-visible{background:#fff;text-decoration:underline}
 
 /* Pestañas: se desplazan de lado en el celular */
 .pestanas{position:sticky;top:0;z-index:10;background:var(--c2);display:flex;gap:6px;overflow-x:auto;padding:8px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}

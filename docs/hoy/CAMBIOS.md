@@ -291,3 +291,92 @@ política de seguridad parecida y dentro de un marco aislado (allí no se puede 
 ```
 python3 herramientas/construir.py --salida /tmp/prueba-hoy --hoy-fecha 2026-12-07 --hoy-dias 0 --hoy-prueba
 ```
+
+## Etapa 3 · Compartir, correo, privacidad, el libro y la cabecera · 26 de noviembre de 2026
+
+### Compartir
+
+- **Al resolver**, un botón «Compartir». En el móvil abre su menú de compartir (WhatsApp…); en el ordenador, copia el
+  texto («Copiado. Pégalo donde quieras.»). Si no se puede copiar, el texto aparece a la vista, ya seleccionado.
+- **El texto**, sin una sola letra de la cuadrícula:
+
+  ```
+  La historia del día · 1 ene. 2027
+  «Título de la historia»
+  Resuelta con 1 pista
+  🟧⬜⬜⬜⬜🟧
+  🟧⬜⬜⬜⬜🟧
+  🟧🟧🟧🟧🟧🟧
+  ediciones-edwin-zar.pages.dev/hoy
+  ```
+
+  (Ejemplo inventado, con el formato de la especificación: aquí no se pone ninguna historia que no haya llegado.)
+
+  La figura es el recorrido de la frase, recortado a su caja y reducido a 6 × 6 como mucho. La dirección sale del
+  `canonical` de la página: es la del sitio, también en una prueba.
+- **Prueba:** el texto se lee línea a línea; fuera del título, la fecha y la dirección no puede haber ninguna letra, y la
+  figura tiene que ser la del recorrido (calculada aparte en la prueba). En el móvil (390 px, con el menú de compartir
+  simulado) y en el ordenador (1280 px, leyendo el portapapeles). **Defecto plantado:** una letra de la cuadrícula metida
+  en el texto → detectado.
+
+### «Más historias como esta»
+
+- Al resolver: «Hay más historias como esta en «Letras con historia», de Edwin Zar.» y el botón **«Más historias como
+  esta»**, que lleva a la ficha del libro en el catálogo: `../es/#es/letras-con-historia` (abre `/es/` en esa ficha; el
+  ejemplo de la especificación, `/es/#letras-con-historia`, no funciona con las direcciones del catálogo).
+- Si `datos/hoy_enlaces.csv` trae un enlace de Amazon Attribution para el libro, el botón lleva ahí (se abre aparte). Un
+  enlace que no sea de Amazon detiene la construcción.
+- El título y el autor salen del catálogo. **Pruebas:** el botón lleva a la ficha y la ficha existe; defectos plantados:
+  el botón a otra parte (en la página y en `juego.js`) → detectados.
+
+### El correo y la privacidad
+
+- **El formulario** sale de `datos/hoy_formulario.html` (ahora vacío: no aparece). Cuando tenga algo, se enseña al resolver,
+  con el título «Recibe cada domingo las historias de la semana», la nota de la doble confirmación y de la baja, y el
+  enlace «Cómo tratamos tus datos» a `/privacidad/`.
+- **Solo HTML:** si el formulario lleva scripts, imágenes, estilos, `src=`, `on…=` o `javascript:`, no se publica (la
+  página no puede llamar a terceros hasta que se envía). Tiene que ser un `<form method="post" action="https://…">`.
+  Al servicio de correo hay que pedirle la versión «HTML» de su formulario.
+- **La página `/privacidad/`** sale de `datos/hoy_privacidad.md`: **un borrador para que lo revise el autor** (no es
+  asesoría legal). Dice quién recoge los datos, cuáles y para qué, con qué servicio, la doble confirmación, cómo darse de
+  baja, los derechos (Ley 1581 de Colombia y RGPD) y que no hay anuncios ni rastreadores.
+  - Le faltan datos: el correo de contacto, el servicio de correo y el enlace a su política, y la fecha (van entre
+    `[[ ]]`). Mientras empiece por «BORRADOR» o tenga algo entre `[[ ]]`, **el formulario no se publica** y la
+    construcción sale con un error (y sin zip).
+  - Ni el borrador ni `datos/sitios.csv` se copian al sitio.
+- **Pruebas** (`probar_hoy.py`): formulario y privacidad revisada → se publican los dos; formulario con un script → no;
+  formulario con la privacidad en borrador → no. En el navegador (`probar_juego.js`): el formulario está escondido hasta
+  resolver, aparece dentro del final y no llama a nadie. Defecto plantado: el formulario que no aparece → detectado.
+
+### `_redirects` y la cabecera del catálogo
+
+- `/historia-del-dia` → `/hoy/` (301), en los sitios con `/hoy/` (hoy, el completo).
+- **Enlace en la cabecera del catálogo** (texto `enlace_hoy` de `datos/textos.csv`, en los seis idiomas): «📖 La historia
+  del día · una historia real y una sopa de letras cada día» (en `/en/`, `/fr/` e `/it/`, en su idioma, avisando de que
+  la historia está en español). Una píldora clara de 44 px sobre el azul.
+  - Solo en `/` y en las páginas de idioma: **las de pedidos (`/colombia`, `/contraentrega`) y `/internacional` no
+    cambian.**
+  - Solo en los sitios que llevan `/hoy/`: el sitio Amazon no lo tiene, ni el texto en su `textos.csv`.
+- **Prueba:** el resto del sitio solo cambia, respecto a la línea base de antes de `/hoy/`, en ese enlace (una línea en
+  cada página), su estilo (4 líneas de `estilos.css`) y su texto (una fila de `textos.csv`); cualquier otra diferencia
+  es un fallo. Defectos plantados: sin el enlace en la principal, el enlace metido en `/colombia` → detectados.
+
+### Comprobado
+
+| Prueba | Resultado |
+|---|---|
+| `probar_hoy.py` | todos los escenarios bien; los 3 casos del formulario bien; 10/10 defectos plantados |
+| `probar_juego.js` | las 9 partidas y 34 comprobaciones de comportamiento (4 nuevas: compartir en el móvil y en el ordenador, el botón del libro y el formulario); defectos plantados: ver el registro de la ejecución con `--prueba` |
+| `comprobar_sitios.py` | el sitio Amazon sigue sin nada de Hotmart ni de los pedidos de Colombia, y sin el enlace a /hoy/; 11/11 defectos |
+| `revisar_juego.py` | nada del vol. 1 |
+| Construcción con Python 3.11 | idéntica a la de Python 3.13 (salvo `version.txt`) |
+
+### Lo que estas comprobaciones NO cubren (etapa 3)
+
+- **WhatsApp de verdad:** el menú de compartir se ha simulado; no se ha compartido desde un móvil real. Cómo se ve el
+  texto (los cuadrados de colores) depende del teléfono.
+- **El formulario real:** no hay formulario todavía; se probó con uno de ejemplo. Cuando el autor elija el servicio
+  (Kit o Brevo), hay que probar el alta y la doble confirmación de verdad.
+- **El texto de privacidad** es un borrador: no es asesoría legal.
+- **Si el validador falla** (un mes con un error), el enlace de la cabecera sigue apuntando a `/hoy/`, que no se publica;
+  la construcción sale con error y sin zip, así que no se sube.

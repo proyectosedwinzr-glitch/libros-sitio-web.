@@ -36,7 +36,8 @@ Para probarlo en tu computador sin tocar los archivos originales:
     python3 herramientas/construir.py --salida /ruta/a/una/carpeta/vacia
 Opciones del paso «hoy»: --hoy-fecha AAAA-MM-DD (fecha simulada), --hoy-dias N,
 --hoy-datos CARPETA (otra carpeta de meses, para pruebas), --hoy-prueba (la página queda fijada en
---hoy-fecha, para jugar antes de tiempo; esa carpeta NO se sube como sitio definitivo).
+--hoy-fecha, para jugar antes de tiempo; esa carpeta NO se sube como sitio definitivo), --hoy-formulario y
+--hoy-privacidad RUTA (otro formulario y otro texto de privacidad, para pruebas).
 Sin --salida, escribe en la carpeta del sitio (es lo que hace Cloudflare).
 Con --salida, NO copia lo que no es del sitio: privado/ (nunca), herramientas/, docs/,
 apps-script/, README.md, CLAUDE.md.
@@ -184,7 +185,7 @@ def ruta_rel(u, pre):
 
 
 # ---------------------------------------------------------------- piezas de HTML
-def html_cabecera(D, lang, pre):
+def html_cabecera(D, lang, pre, con_hoy=False):
     tit, sub = D.t('titulo_sitio', lang), D.t('subtitulo_sitio', lang)
     vit = ''.join(
         f'<a href="{pre}{b["idioma"]}/#{e(b["idioma"])}/{e(slug(b["grupo"]))}" title="{e(b["titulo"])}">'
@@ -194,7 +195,8 @@ def html_cabecera(D, lang, pre):
     return (f'<h1 id="titulo">{e(tit)}</h1>\n  <p id="subtitulo" class="subtit">{e(sub)}</p>\n'
             f'  <p id="destacado" class="destacado">{e(D.t("destacado", lang))}</p>\n'
             f'  <div id="vitrina" class="vitrina" aria-label="Libros">{vit}</div>\n'
-            f'  <p id="lema">{e(D.t("lema", lang))}</p>')
+            f'  <p id="lema">{e(D.t("lema", lang))}</p>'
+            + (f'\n  <p class="enlace-hoy"><a href="{pre}hoy/" hreflang="es">{e(D.t("enlace_hoy", lang))}</a></p>' if con_hoy else ''))
 
 
 def html_pestanas(D, lang, pre, con_colombia):
@@ -297,10 +299,10 @@ def sustituir(h, viejo, nuevo, todas=False):
     return h.replace(viejo, nuevo) if todas else h.replace(viejo, nuevo, 1)
 
 
-def pagina(D, plantilla, lang, pre, url_pagina, canonical, ajustes, con_colombia=True, con_hotmart=True):
+def pagina(D, plantilla, lang, pre, url_pagina, canonical, ajustes, con_colombia=True, con_hotmart=True, con_hoy=False):
     h = sustituir(plantilla, '<html lang="es">', f'<html lang="{lang}">')
     h = reemplazar(h, 'META', html_meta(D, lang, url_pagina, canonical))
-    h = reemplazar(h, 'CABECERA', html_cabecera(D, lang, pre))
+    h = reemplazar(h, 'CABECERA', html_cabecera(D, lang, pre, con_hoy))
     h = reemplazar(h, 'PESTANAS', html_pestanas(D, lang, pre, con_colombia))
     h = reemplazar(h, 'CATALOGO', html_catalogo(D, lang, pre, con_hotmart))
     h = reemplazar(h, 'PIE', e(D.t('pie', lang)))
@@ -355,7 +357,89 @@ def svg_figura(recorrido):
             f'<circle cx="{(ini[1] - c0) * t + t / 2:g}" cy="{(ini[0] - f0) * t + t / 2:g}" r="4.5" fill="currentColor"/></svg>')
 
 
-def html_hoy(D, h, nota, imagen, config):
+FORMULARIO_PROHIBIDO = re.compile(r'<\s*(script|iframe|link|img|style|object|embed)\b|\son\w+\s*=|\bsrc\s*=|javascript:', re.I)
+
+
+def leer_formulario(ruta):
+    """El formulario incrustado del servicio de correo (datos/hoy_formulario.html). Vacío = no hay formulario.
+    Solo HTML: sin scripts ni nada que se cargue de otro dominio (la página no llama a terceros hasta que se envía).
+    Si no cumple, ValueError con el motivo."""
+    f = ruta.read_text(encoding='utf-8').strip() if ruta.exists() else ''
+    if not f:
+        return ''
+    m = FORMULARIO_PROHIBIDO.search(f)
+    if m:
+        raise ValueError(f'el formulario lleva «{m.group(0).strip()}»: tiene que ser solo HTML, sin scripts, imágenes ni nada '
+                         'que se cargue de otro dominio (pide al servicio de correo la versión «HTML» del formulario)')
+    if not (re.search(r'<form\b[^>]*\baction\s*=\s*["\']https://', f, re.I)
+            and re.search(r'<form\b[^>]*\bmethod\s*=\s*["\']post["\']', f, re.I)):
+        raise ValueError('el formulario tiene que ser un <form method="post" action="https://…"> del servicio de correo')
+    return f
+
+
+def leer_privacidad(ruta):
+    """El texto de /privacidad/ (datos/hoy_privacidad.md). ValueError si falta, si es un borrador o si le faltan datos."""
+    t = ruta.read_text(encoding='utf-8').strip() if ruta.exists() else ''
+    if not t:
+        raise ValueError(f'falta el texto de la página de privacidad ({ruta.name})')
+    if t.upper().startswith('BORRADOR'):
+        raise ValueError(f'la página de privacidad ({ruta.name}) sigue siendo un borrador: el autor tiene que revisarla')
+    if '[[' in t:
+        faltan = ', '.join(sorted(set(re.findall(r'\[\[[^]]*\]\]', t))))
+        raise ValueError(f'a la página de privacidad ({ruta.name}) le faltan datos: {faltan}')
+    return t
+
+
+def enlaces_md(s):
+    """Texto con enlaces [así](https://…) o [así](mailto:…): se escapa todo y luego se crean los enlaces."""
+    return re.sub(r'\[([^\]]+)\]\(((?:https://|mailto:)[^)\s]+)\)', lambda m: f'<a href="{m.group(2)}">{m.group(1)}</a>', e(s))
+
+
+def html_privacidad(D, texto):
+    partes = []
+    for b in [x.strip() for x in re.split(r'\n\s*\n', texto) if x.strip()]:
+        lineas = [x.strip() for x in b.splitlines()]
+        if b.startswith('## '):
+            partes.append(f'<h2>{e(b[3:].strip())}</h2>')
+        elif b.startswith('# '):
+            partes.append(f'<h1>{e(b[2:].strip())}</h1>')
+        elif all(x.startswith('- ') for x in lineas):
+            partes.append('<ul>' + ''.join(f'<li>{enlaces_md(x[2:])}</li>' for x in lineas) + '</ul>')
+        else:
+            partes.append(f'<p>{enlaces_md(" ".join(lineas))}</p>')
+    return ('<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            '<title>Privacidad · La historia del día · Libros de Edwin Zar</title>\n'
+            f'<link rel="canonical" href="{SITIO}/privacidad/">\n'
+            '<link rel="stylesheet" href="../hoy/juego.css">\n</head>\n<body>\n<main class="pagina privacidad">\n'
+            '<a class="volver" href="../hoy/">← La historia del día</a>\n' + '\n'.join(partes) +
+            f'\n<p class="pie">{e(D.t("pie", "es"))}</p>\n</main>\n</body>\n</html>\n')
+
+
+def libros_hoy(D, raiz, historias):
+    """A dónde lleva «Más historias como esta» en cada libro de las historias: al enlace de Amazon Attribution de
+    datos/hoy_enlaces.csv, si lo hay; si no, a la ficha del libro en el catálogo (en español, si existe)."""
+    enlaces = {}
+    for r in leer_csv(raiz / 'datos' / 'hoy_enlaces.csv'):
+        u = (r.get('enlace') or '').strip()
+        if r.get('libro') and u:
+            if not re.match(r'^https://(www\.)?amazon\.[a-z.]+/', u):
+                raise SystemExit(f'datos/hoy_enlaces.csv: el enlace de «{r["libro"]}» tiene que ser de Amazon: «{u}»')
+            enlaces[r['libro'].strip()] = u
+    out = {}
+    for lib in sorted({h.get('libro') for h in historias.values() if h.get('libro')}):
+        ed = (next((b for b in D.libros if slug(b['grupo']) == lib and b['idioma'] == 'es'), None)
+              or next((b for b in D.libros if slug(b['grupo']) == lib and b['idioma'] in D.paginas), None))
+        if not ed:
+            print(f'Aviso: el libro «{lib}» de las historias no está en el catálogo: «Más historias como esta» lleva al catálogo.')
+            out[lib] = {'titulo': '', 'autor': '', 'url': enlaces.get(lib) or '../'}
+            continue
+        out[lib] = {'titulo': ed['titulo'], 'autor': ed.get('autor', ''),
+                    'url': enlaces.get(lib) or f'../{ed["idioma"]}/#{ed["idioma"]}/{slug(ed["grupo"])}'}
+    return out
+
+
+def html_hoy(D, h, nota, imagen, config, formulario=''):
     """La página /hoy/ con la historia escrita dentro (para buscadores y sin JavaScript). NUNCA lleva el final.
     Con JavaScript, hoy/juego.js pasa a la historia del día del dispositivo. config (#hoy-config) solo lleva
     fechas: los días publicados, el primero de todos y, en una construcción de prueba, la fecha fijada."""
@@ -396,6 +480,12 @@ def html_hoy(D, h, nota, imagen, config):
             '<p class="sin-js">Para jugar en la pantalla hace falta JavaScript. También puedes resolverla en papel.</p>')
     como = ('<details id="como"><summary>Cómo se juega</summary><ol>' + ''.join(f'<li>{e(x)}</li>' for x in COMO_SE_JUEGA)
             + '</ol></details>')
+    correo = ''
+    if formulario:   # se enseña al resolver (juego.js lo pone en el bloque del final)
+        correo = ('<section class="correo" id="correo" hidden aria-labelledby="t-correo">'
+                  '<h2 id="t-correo">Recibe cada domingo las historias de la semana</h2>\n'
+                  f'{formulario}\n<p class="correo-nota">Te llegará un correo para confirmar la suscripción. Puedes darte de baja '
+                  'cuando quieras, con el enlace de cada correo. <a href="../privacidad/">Cómo tratamos tus datos</a>.</p></section>\n')
     prueba = ''
     if config.get('fijo'):
         prueba = (f'<p class="prueba">Versión de prueba: la fecha está fijada en el '
@@ -418,7 +508,7 @@ def html_hoy(D, h, nota, imagen, config):
         '<link rel="stylesheet" href="juego.css">\n</head>\n<body>\n'
         f'<main class="pagina" id="hoy" data-fecha="{e(h["fecha"]) if h else ""}">\n'
         '<a class="volver" href="../">← Libros de Edwin Zar</a>\n'
-        f'{prueba}<div id="vista">{cuerpo}</div>\n{como}\n<p class="pie">{e(D.t("pie", "es"))}</p>\n</main>\n'
+        f'{prueba}<div id="vista">{cuerpo}</div>\n{como}\n{correo}<p class="pie">{e(D.t("pie", "es"))}</p>\n</main>\n'
         f'<script type="application/json" id="hoy-config">{datos}</script>\n'
         '<script src="juego.js" defer></script>\n</body>\n</html>\n')
 
@@ -438,16 +528,17 @@ def xml_feed(dias, historias):
             '</description><language>es</language>' + items + '</channel></rss>\n')
 
 
-def paso_hoy(D, raiz, salida, fecha, dias, carpeta, prueba=False):
+def paso_hoy(D, raiz, salida, fecha, dias, carpeta, prueba=False, ruta_formulario=None, ruta_privacidad=None):
     """Devuelve 0 si se publicó o se saltó con aviso; 1 si el validador falló (y entonces no se publica nada de /hoy/).
     Con prueba=True (--hoy-prueba), la página queda fijada en la fecha de la construcción, para jugar antes de tiempo:
     esa carpeta no se sube como sitio definitivo."""
     destino = salida / 'hoy'
 
     def limpiar_generados():
-        for g in (destino / 'index.html', destino / 'feed.xml'):
+        for g in (destino / 'index.html', destino / 'feed.xml', salida / 'privacidad' / 'index.html'):
             if g.exists(): g.unlink()
-        if (destino / 'd').exists(): shutil.rmtree(destino / 'd')
+        for c in (destino / 'd', salida / 'privacidad'):
+            if c.exists(): shutil.rmtree(c)
 
     def no_publicar():
         if salida != raiz:
@@ -508,22 +599,34 @@ def paso_hoy(D, raiz, salida, fecha, dias, carpeta, prueba=False):
         (destino / 'd' / f'{f}.json').write_text(json.dumps(historias[f], ensure_ascii=False, separators=(',', ':')),
                                                  encoding='utf-8')
     imagen = f'{SITIO}/hoy/compartir.jpg' if (raiz / 'hoy' / 'compartir.jpg').exists() else IMAGEN_COMPARTIR
-    config = {'dias': publicadas, 'primera': min(historias), 'fijo': hoy_iso if prueba else ''}
-    (destino / 'index.html').write_text(html_hoy(D, portada, nota, imagen, config), encoding='utf-8')
+    config = {'dias': publicadas, 'primera': min(historias), 'fijo': hoy_iso if prueba else '',
+              'libros': libros_hoy(D, raiz, historias)}
+    # El formulario de correo solo se publica con su página de privacidad, ya revisada por el autor.
+    codigo, formulario = 0, ''
+    try:
+        formulario = leer_formulario(ruta_formulario or raiz / 'datos' / 'hoy_formulario.html')
+        if formulario:
+            privacidad = leer_privacidad(ruta_privacidad or raiz / 'datos' / 'hoy_privacidad.md')
+            escribir_tal_cual(salida / 'privacidad' / 'index.html', html_privacidad(D, privacidad))
+    except ValueError as err:
+        print(f'ERROR: no se publica el formulario de correo: {err}.')
+        formulario, codigo = '', 1
+    (destino / 'index.html').write_text(html_hoy(D, portada, nota, imagen, config, formulario), encoding='utf-8')
     (destino / 'feed.xml').write_text(xml_feed(hasta_hoy, historias), encoding='utf-8')
     rango = f'{publicadas[0]} … {publicadas[-1]}' if publicadas else 'ninguno'
     print(f'La historia del día (fecha {hoy_iso}, --hoy-dias {dias}): {len(publicadas)} días publicados ({rango}); '
-          f'portada: {portada["fecha"] if portada else "aviso, aún no hay historias"}; feed: {len(hasta_hoy)} días.')
+          f'portada: {portada["fecha"] if portada else "aviso, aún no hay historias"}; feed: {len(hasta_hoy)} días; '
+          f'formulario de correo: {"sí, con /privacidad/" if formulario else "no"}.')
     if prueba:
         print(f'AVISO: construcción DE PRUEBA (--hoy-prueba): /hoy/ queda fijada en el {hoy_iso}. '
               'Sirve para jugar antes de tiempo; NO la subas como sitio definitivo.')
-    return 0
+    return codigo
 
 
 # Lo que no es del sitio y no se copia a la carpeta de salida (privado/ NUNCA).
 NO_PUBLICAR = {'privado', 'herramientas', 'docs', 'apps-script', 'README.md', 'CLAUDE.md', '.gitignore', '.nojekyll',
                'version.txt'}
-NO_PUBLICAR_DENTRO = {'datos': {'sitios.csv'}}   # configuración de la construcción, dentro de una carpeta del sitio
+NO_PUBLICAR_DENTRO = {'datos': {'sitios.csv', 'hoy_privacidad.md'}}   # de la construcción (la privacidad sale de ahí, revisada)
 
 
 def ignorar_al_copiar(raiz, salida=None):
@@ -545,7 +648,8 @@ def ignorar_al_copiar(raiz, salida=None):
 SECCIONES = ('hotmart', 'colombia')
 # Claves de datos/textos.csv que no van a un sitio sin esa sección.
 TEXTOS_DE = {'hotmart': ('hotmart_', 'acceso_hotmart', 'sec_hotmart'),
-             'colombia': ('colombia_', 'aviso_colombia', 'pais_co_pedido')}
+             'colombia': ('colombia_', 'aviso_colombia', 'pais_co_pedido'),
+             'hoy': ('enlace_hoy',)}
 MARCA_LINEA = re.compile(r'^[ \t]*(?://[ \t]*@(fin-)?([a-z]+)|/\*[ \t]*@(fin-)?([a-z]+)[ \t]*\*/)[ \t]*\r?$')
 MARCA_EN_LINEA = re.compile(r'/\*@(fin-)?([a-z]+)\*/')
 
@@ -661,9 +765,11 @@ def texto_redirects(nombre, cfg):
                 '# El destino sale de datos/sitios.csv. 302 = temporal: se puede cambiar sin cambiar el QR.\n'
                 f'/qr   {destino}  302\n/qr/  {destino}  302\n'
                 '# Dirección para las ediciones digitales de Hotmart: la página principal (Amazon y Hotmart).\n'
-                '/digital   /  302\n/digital/  /  302\n')
+                '/digital   /  302\n/digital/  /  302\n'
+                + ('# Dirección fácil de «La historia del día».\n/historia-del-dia  /hoy/  301\n' if cfg['hoy'] else ''))
     return ('# Dirección del QR impreso en los productos de Amazon: la página principal de este sitio.\n'
-            f'/qr   {destino}  302\n/qr/  {destino}  302\n')
+            f'/qr   {destino}  302\n/qr/  {destino}  302\n'
+            + ('# Dirección fácil de «La historia del día».\n/historia-del-dia  /hoy/  301\n' if cfg['hoy'] else ''))
 
 
 def texto_version(raiz, nombre):
@@ -701,7 +807,7 @@ def comprimir(salida, nombre):
     return destino
 
 
-def construir_lista_blanca(D, raiz, salida, plantilla, pags, cfg, nombre):
+def construir_lista_blanca(D, raiz, salida, plantilla, pags, cfg, nombre, con_hoy=False):
     """Un sitio sin alguna sección (el Amazon): solo lleva lo que necesita y, de app.js, estilos.css, config.js y
     textos.csv, quita lo de las secciones que no lleva. Nunca copia hotmart.csv, apps-script/, colombia.html,
     contraentrega.html, internacional.html, herramientas/, docs/ ni privado/."""
@@ -725,7 +831,7 @@ def construir_lista_blanca(D, raiz, salida, plantilla, pags, cfg, nombre):
         return h if cfg['indexar'] else sustituir(h, '<meta charset="utf-8">',
                                                   '<meta charset="utf-8">\n<meta name="robots" content="noindex">')
 
-    secciones = dict(con_colombia=cfg['colombia'], con_hotmart=cfg['hotmart'])
+    secciones = dict(con_colombia=cfg['colombia'], con_hotmart=cfg['hotmart'], con_hoy=con_hoy)
     for lang in D.paginas:
         escribir(f'{lang}/index.html', robots(pagina(D, plantilla, lang, '../', f'{SITIO}/{lang}/', f'{SITIO}/{lang}/',
                  f'window.CONFIG.IDIOMA_PAGINA = "{lang}"; window.CONFIG.PAGINAS_IDIOMA = {pags};', **secciones)))
@@ -734,7 +840,7 @@ def construir_lista_blanca(D, raiz, salida, plantilla, pags, cfg, nombre):
     escribir('estilos.css', recortar(leer_tal_cual(raiz / 'estilos.css'), quitar, 'estilos.css'))
     config = leer_tal_cual(raiz / 'config.js')
     escribir('config.js', sin_pedidos(config) if 'colombia' in quitar else config)
-    escribir('datos/textos.csv', textos_sin(raiz / 'datos' / 'textos.csv', quitar))
+    escribir('datos/textos.csv', textos_sin(raiz / 'datos' / 'textos.csv', quitar | (set() if con_hoy else {'hoy'})))
     for rel in ('datos/catalogo.csv', 'datos/idiomas.csv'):
         copiar(rel)
     for carpeta in ('imagenes', 'portadas'):
@@ -786,8 +892,10 @@ def main():
         raise SystemExit('No hay libros en datos/catalogo.csv')
     pags = repr(D.paginas).replace("'", '"')
 
+    # ¿Se publicará /hoy/? (para el enlace de la cabecera del catálogo)
+    hay_hoy = cfg['hoy'] and datos_hoy.is_dir() and any(datos_hoy.glob('hoy_*.json'))
     if nombre != 'completo':
-        construir_lista_blanca(D, raiz, salida, plantilla, pags, cfg, nombre)
+        construir_lista_blanca(D, raiz, salida, plantilla, pags, cfg, nombre, hay_hoy)
     else:
         if salida != raiz:
             if salida.exists(): shutil.rmtree(salida)
@@ -806,10 +914,10 @@ def main():
         for lang in D.paginas:
             escribir(f'{lang}/index.html', pagina(D, plantilla, lang, '../', f'{SITIO}/{lang}/', f'{SITIO}/{lang}/',
                      f'window.CONFIG.IDIOMA_PAGINA = "{lang}"; window.CONFIG.PAGINAS_IDIOMA = {pags}; window.CONFIG.MOSTRAR_COLOMBIA = false;',
-                     con_colombia=False))
+                     con_colombia=False, con_hoy=hay_hoy))
         # 2) Página principal: limpia (sin pestaña Colombia), con Amazon y Hotmart
         escribir('index.html', pagina(D, plantilla, 'es', '', f'{SITIO}/', f'{SITIO}/',
-                 'window.CONFIG.MOSTRAR_COLOMBIA = false;', con_colombia=False))
+                 'window.CONFIG.MOSTRAR_COLOMBIA = false;', con_colombia=False, con_hoy=hay_hoy))
         # 3) Pedidos en Colombia (pago Bre-B): /colombia abre directo en la pestaña Colombia
         escribir('colombia.html', pagina(D, plantilla, 'es', '', f'{SITIO}/colombia', f'{SITIO}/colombia',
                  "window.CONFIG.PESTANA_INICIAL = 'colombia';"))
@@ -823,7 +931,11 @@ def main():
         print(f'Listo (sitio completo): {len(D.libros)} libros, {len(D.hotmart)} productos de Hotmart, páginas: {", ".join(escritas)}')
     # «La historia del día» (/hoy/): al final, para que un fallo suyo no impida construir el resto
     if cfg['hoy']:
-        codigo = paso_hoy(D, raiz, salida, fecha_hoy, dias_hoy, datos_hoy, prueba='--hoy-prueba' in sys.argv)
+        formulario = opcion('--hoy-formulario')
+        privacidad = opcion('--hoy-privacidad')
+        codigo = paso_hoy(D, raiz, salida, fecha_hoy, dias_hoy, datos_hoy, prueba='--hoy-prueba' in sys.argv,
+                          ruta_formulario=Path(formulario).resolve() if formulario else None,
+                          ruta_privacidad=Path(privacidad).resolve() if privacidad else None)
         if not cfg['indexar'] and (salida / 'hoy' / 'index.html').exists():
             pag = salida / 'hoy' / 'index.html'
             h = pag.read_text(encoding='utf-8')

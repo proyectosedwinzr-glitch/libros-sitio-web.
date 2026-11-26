@@ -19,9 +19,10 @@
  *    antes del lanzamiento, fechas en la dirección, la fecha según la hora del dispositivo y la página sin JavaScript.
  * Con --prueba, antes planta defectos que tienen que saltar (regla 7 de CLAUDE.md): 11 en la página (final distinto,
  * palabra en otras casillas, casillas chicas o grandes, texto y botón chicos, tercero, error de JavaScript, el final a la
- * vista, imagen sin texto alternativo, letras compartidas sin pintar) y 11 en una copia de juego.js servida en lugar de la buena (semana desde el domingo,
+ * vista, imagen sin texto alternativo, letras compartidas sin pintar) y 14 en una copia de juego.js servida en lugar de la buena (semana desde el domingo,
  * pistas sin escalonar, fecha en UTC, JSON de otro día aceptado, días futuros, sin guardado, sin aviso de lanzamiento,
- * toques sueltos que estropean la selección, «Empezar de nuevo» sin confirmar y sin nota amable): cada uno lo tiene que detectar la comprobación que lo vigila.
+ * toques sueltos que estropean la selección, «Empezar de nuevo» sin confirmar, una letra de la cuadrícula en el texto de
+ * compartir, el botón del libro a otra parte, el formulario que no aparece y sin nota amable): cada uno lo tiene que detectar la comprobación que lo vigila.
  * Sale con 0 si todo va bien; 1 si algo falla; 2 si un defecto plantado no salta.
  */
 'use strict';
@@ -378,6 +379,89 @@ async function comportamiento(nav, base, mes, raiz) {
     await ctx.close();
   });
 
+  // Al resolver (ESPEC §2 y §4): compartir sin ninguna letra de la cuadrícula, el botón al libro y el formulario.
+  const figuraEsperada = rec => {   // calculada aquí, aparte del juego: recortada a su caja y de 6 × 6 como mucho
+    const fs = rec.map(q => q[0]), cs = rec.map(q => q[1]);
+    const f0 = Math.min(...fs), c0 = Math.min(...cs), alto = Math.max(...fs) - f0 + 1, ancho = Math.max(...cs) - c0 + 1;
+    const A = Math.min(alto, 6), B = Math.min(ancho, 6);
+    const m = Array.from({ length: A }, () => Array(B).fill('⬜'));
+    rec.forEach(([f, c]) => { m[Math.floor((f - f0) * A / alto)][Math.floor((c - c0) * B / ancho)] = '🟧'; });
+    return m.map(r => r.join(''));
+  };
+  const MES_CORTO = ['ene.', 'feb.', 'mar.', 'abr.', 'may.', 'jun.', 'jul.', 'ago.', 'sept.', 'oct.', 'nov.', 'dic.'];
+  // Línea a línea: fuera del título, la fecha y la dirección, ninguna letra (y la figura, solo cuadrados).
+  const revisarCompartido = (texto, h, pistas) => {
+    const l = String(texto || '').split('\n'), [a, m, d] = h.fecha.split('-').map(Number), fig = figuraEsperada(h.frase_recorrido);
+    const esperado = [`La historia del día · ${d} ${MES_CORTO[m - 1]} ${a}`, `«${h.titulo}»`,
+      pistas ? `Resuelta con ${pistas} ${pistas === 1 ? 'pista' : 'pistas'}` : 'Resuelta sin pistas', ...fig, 'ediciones-edwin-zar.pages.dev/hoy'];
+    const fallos = [];
+    if (l.length !== esperado.length) fallos.push(`${l.length} líneas y deberían ser ${esperado.length}`);
+    esperado.forEach((x, i) => { if (l[i] !== x) fallos.push(`línea ${i + 1}: «${l[i]}» y debería ser «${x}»`); });
+    l.slice(3, 3 + fig.length).forEach((x, i) => { if (/[^🟧⬜]/u.test(x || '')) fallos.push(`la línea ${i + 4} de la figura no son solo cuadrados`); });
+    return fallos;
+  };
+  const resolverAqui = async (page, h, tactil) => {
+    const S = solucion(h);
+    for (const q of S.palabras) { await tocar(page, q.celdas[0], tactil); await tocar(page, q.celdas[q.celdas.length - 1], tactil); }
+    for (const x of S.frase) await tocar(page, x, tactil);
+    await pulsar(page, '#leer-todo', tactil);
+  };
+  await bloque('Compartir en el móvil y el botón del libro', async () => {
+    const ctx = await contexto(nav, 390);
+    const { page, reg } = await abrir(ctx, base, '/hoy/', instante('2026-12-01'), { antes: async q => q.addInitScript(() => {
+      Object.defineProperty(navigator, 'share', { configurable: true, value: d => { window.__compartido = d.text; return Promise.resolve(); } });
+    }) });
+    await listo(page, '2026-12-01');
+    const h = H['2026-12-01'];
+    await pulsar(page, '#pista', true);      // una pista: el texto tiene que decir «Resuelta con 1 pista»
+    await resolverAqui(page, h, true);
+    await pulsar(page, '#compartir', true);
+    await page.waitForTimeout(200);
+    const fallos = revisarCompartido(await page.evaluate(() => window.__compartido), h, 1);
+    comprobar(!fallos.length && !reg.errores.length, 'Compartir en el móvil abre su menú con el texto exacto, sin ninguna letra de la cuadrícula' + (fallos.length ? ': ' + fallos[0] : ''));
+    const href = await page.getAttribute('.boton-libro', 'href');
+    await page.locator('.boton-libro').tap();
+    await page.waitForFunction(() => /\/es\/$/.test(location.pathname), null, { timeout: 8000 });
+    await page.waitForTimeout(800);
+    const ficha = await page.evaluate(() => ({ hash: location.hash, hay: !!document.getElementById('l-letras-con-historia') }));
+    comprobar(href === '../es/#es/letras-con-historia' && ficha.hash === '#es/letras-con-historia' && ficha.hay,
+      `«Más historias como esta» lleva a la ficha del libro en el catálogo (${href})`);
+    await ctx.close();
+  });
+  await bloque('Compartir en el ordenador', async () => {
+    const ctx = await contexto(nav, 1280);
+    await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
+    const { page, reg } = await abrir(ctx, base, '/hoy/', instante('2026-12-03'));
+    await listo(page, '2026-12-03');
+    const h = H['2026-12-03'];
+    await resolverAqui(page, h, false);
+    await pulsar(page, '#compartir', false);
+    await page.waitForTimeout(300);
+    const fallos = revisarCompartido(await page.evaluate(() => navigator.clipboard.readText()), h, 0);
+    const aviso = (await page.textContent('#compartir-msg')).trim();
+    comprobar(!fallos.length && aviso.startsWith('Copiado') && !reg.errores.length,
+      'Compartir en el ordenador copia el texto exacto («Copiado»)' + (fallos.length ? ': ' + fallos[0] : ''));
+    await ctx.close();
+  });
+  await bloque('El formulario de correo, al resolver', async () => {
+    const ctx = await contexto(nav, 390);
+    const original = fs.readFileSync(path.join(raiz, 'hoy', 'index.html'), 'utf8');
+    const conForm = original.replace('<p class="pie">', '<section class="correo" id="correo" hidden aria-labelledby="t-correo">' +
+      '<h2 id="t-correo">Recibe cada domingo las historias de la semana</h2><form method="post" action="https://correo.example/f">' +
+      '<label for="em">Tu correo</label><input type="email" id="em" name="email"><button type="submit">Apuntarme</button></form>' +
+      '<p class="correo-nota">Nota. <a href="../privacidad/">Cómo tratamos tus datos</a>.</p></section><p class="pie">');
+    if (conForm === original) throw new Error('no se pudo poner el formulario de prueba en la página');
+    const { page, reg } = await abrir(ctx, base, '/hoy/', instante('2026-12-02'),
+      { antes: async q => q.route('**/hoy/', r => r.fulfill({ status: 200, contentType: 'text/html', body: conForm })) });
+    await listo(page, '2026-12-02');
+    const antes = await page.locator('#correo').isVisible().catch(() => false);
+    await resolverAqui(page, H['2026-12-02'], true);
+    const despues = await page.locator('#resuelta #correo').isVisible();
+    comprobar(!antes && despues && !reg.terceros.length,
+      'El formulario de correo aparece al resolver, dentro del final, y no llama a nadie hasta que se envía');
+    await ctx.close();
+  });
+
   // «Empezar de nuevo» se confirma en la página: el primer toque pregunta y el segundo borra (las pistas se quedan).
   await bloque('Empezar de nuevo', async () => {
     const ctx = await contexto(nav, 390);
@@ -491,6 +575,11 @@ const MUTACIONES = [
   ['un toque suelto estropea la selección', 'sel = [x];', 'void 0;', 'toque suelto antes'],
   ['un toque de más borra el recorrido de la frase', 'if (antes.length >= 3) {', 'if (false) {', 'toque de más en medio de la frase'],
   ['«Empezar de nuevo» borra al primer toque', 'if (!b.dataset.seguro) {', 'if (false) {', 'primer toque solo pregunta'],
+  ['una letra de la cuadrícula en el texto de compartir', '["La historia del día · " + d.getDate()',
+    '["La historia del día · " + H.cuadricula.filas[0][0] + d.getDate()', 'texto exacto'],
+  ['el botón del libro lleva a otra parte', `'<a class="b boton-libro" href="' + esc(lib.url) + '"'`, `'<a class="b boton-libro" href="../es/"'`,
+    'lleva a la ficha del libro'],
+  ['el formulario de correo no aparece al resolver', 'CORREO.hidden = false;', 'CORREO.hidden = true;', 'formulario de correo aparece'],
   ['sin nota amable el día que falta', '"La historia de hoy todavía no está lista. Mientras tanto, aquí tienes la del "', '"Aquí tienes la del "', '1 de enero'],
 ];
 

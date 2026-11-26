@@ -30,6 +30,35 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from comparar_sitio import comparar  # noqa: E402
 
 
+# Lo único que /hoy/ cambia, a propósito, en el resto del sitio (etapa 3): el enlace de la cabecera del catálogo
+# (en / y en las páginas de idioma, nunca en las de pedidos), su estilo en estilos.css y su texto en textos.csv.
+ENLACE_HOY = re.compile(r'\n  <p class="enlace-hoy"><a href="(?:\.\./)?hoy/" hreflang="es">[^<]+</a></p>')
+CSS_HOY = re.compile(r'/\* Enlace a «La historia del día» \(solo en los sitios que la llevan\) \*/\n(?:[^\n]*enlace-hoy[^\n]*\n)+')
+TEXTO_HOY = re.compile(r'enlace_hoy,[^\n]*\n')
+PAGINAS_CON_ENLACE = ('index.html', 'es/index.html', 'en/index.html', 'fr/index.html', 'it/index.html')
+CAMBIAN_CON_HOY = PAGINAS_CON_ENLACE + ('estilos.css', 'datos/textos.csv')
+
+
+def sin_lo_de_hoy(rel, t):
+    if rel in PAGINAS_CON_ENLACE:
+        return ENLACE_HOY.sub('', t, count=1)
+    if rel == 'estilos.css':
+        return CSS_HOY.sub('', t, count=1)
+    if rel == 'datos/textos.csv':
+        return TEXTO_HOY.sub('', t, count=1)
+    return t
+
+
+def resto_del_sitio(base, salida):
+    """Lo que no es /hoy/ tiene que ser como en BASE, salvo _redirects y lo que /hoy/ añade a propósito (y nada más)."""
+    fallos = comparar(base, salida, permitidas=('_redirects',) + CAMBIAN_CON_HOY, silencioso=True)
+    for rel in CAMBIAN_CON_HOY:
+        a, d = base / rel, salida / rel
+        if a.exists() and d.exists() and sin_lo_de_hoy(rel, d.read_text(encoding='utf-8')) != a.read_text(encoding='utf-8'):
+            fallos.append(f'DISTINTO: {rel} cambia en algo más que el enlace a «La historia del día»')
+    return fallos
+
+
 def construir(salida, *opciones):
     r = subprocess.run([sys.executable, '-I', str(CONSTRUIR), '--salida', str(salida), *opciones],
                        capture_output=True, text=True, encoding='utf-8', errors='replace')
@@ -86,8 +115,11 @@ def revisar(salida, historias, fecha, dias, portada_esperada, prueba=False):
         mal.append('falta #hoy-config en la portada')
     elif m:
         cfg = json.loads(m.group(1).replace('<\\/', '</'))
-        if set(cfg) != {'dias', 'primera', 'fijo'}:
+        if set(cfg) != {'dias', 'primera', 'fijo', 'libros'}:
             mal.append(f'#hoy-config lleva otras cosas: {sorted(cfg)}')
+        lib = (cfg.get('libros') or {}).get('letras-con-historia') or {}
+        if lib.get('url') != '../es/#es/letras-con-historia' or 'id="l-letras-con-historia"' not in (salida / 'es' / 'index.html').read_text(encoding='utf-8'):
+            mal.append(f'«Más historias como esta» no lleva a la ficha del libro: {lib.get("url")}')
         if cfg.get('dias') != esp:
             mal.append('#hoy-config no lista exactamente los días publicados')
         if cfg.get('primera') != min(historias):
@@ -98,6 +130,18 @@ def revisar(salida, historias, fecha, dias, portada_esperada, prueba=False):
             mal.append('la construcción de prueba no lleva su aviso ni noindex')
         if not prueba and ('noindex' in indice or 'Versión de prueba' in indice):
             mal.append('una construcción normal lleva el aviso de prueba o noindex')
+    # Etapa 3: el enlace a /hoy/ en la cabecera del catálogo (no en las páginas de pedidos), /historia-del-dia y, con el
+    # formulario vacío, ni formulario ni /privacidad/.
+    for rel in PAGINAS_CON_ENLACE:
+        if (salida / rel).exists() and not ENLACE_HOY.search((salida / rel).read_text(encoding='utf-8')):
+            mal.append(f'{rel} no lleva el enlace a «La historia del día»')
+    for rel in ('colombia.html', 'contraentrega.html', 'internacional.html'):
+        if (salida / rel).exists() and 'enlace-hoy' in (salida / rel).read_text(encoding='utf-8'):
+            mal.append(f'{rel} lleva el enlace a «La historia del día» (las páginas de pedidos no cambian)')
+    if '/historia-del-dia  /hoy/  301' not in (salida / '_redirects').read_text(encoding='utf-8'):
+        mal.append('_redirects no lleva /historia-del-dia → /hoy/')
+    if 'id="correo"' in indice or (salida / 'privacidad').exists():
+        mal.append('con el formulario vacío, la página lleva formulario o hay /privacidad/')
     return mal
 
 
@@ -118,6 +162,13 @@ def plantados(salida, historias, fecha, dias, portada):
             (s / 'hoy' / 'index.html').read_text(encoding='utf-8').replace('"dias":[', '"dias":["2027-02-01",', 1), encoding='utf-8'),
         'la página fijada en una fecha (construcción de prueba subida)': lambda s: (s / 'hoy' / 'index.html').write_text(
             (s / 'hoy' / 'index.html').read_text(encoding='utf-8').replace('"fijo":""', f'"fijo":"{fecha}"', 1), encoding='utf-8'),
+        'el botón del libro a otra parte': lambda s: (s / 'hoy' / 'index.html').write_text(
+            (s / 'hoy' / 'index.html').read_text(encoding='utf-8').replace('#es/letras-con-historia', '#es/otro', 1), encoding='utf-8'),
+        'sin el enlace a /hoy/ en la principal': lambda s: (s / 'index.html').write_text(
+            ENLACE_HOY.sub('', (s / 'index.html').read_text(encoding='utf-8'), count=1), encoding='utf-8'),
+        'el enlace a /hoy/ metido en /colombia': lambda s: (s / 'colombia.html').write_text(
+            (s / 'colombia.html').read_text(encoding='utf-8').replace('</h1>', '</h1><p class="enlace-hoy"><a href="hoy/">x</a></p>', 1),
+            encoding='utf-8'),
     }
     ok = 0
     for nombre, plantar in casos.items():
@@ -152,7 +203,7 @@ def main():
             salida = tmp / f'e{i}'
             cod, texto = construir(salida, '--hoy-fecha', fecha, '--hoy-dias', str(dias), *(['--hoy-prueba'] if prueba else []))
             mal = revisar(salida, historias, fecha, dias, portada, prueba) if cod == 0 else [f'la construcción salió con {cod}']
-            resto = comparar(base, salida, permitidas=('_redirects',), silencioso=True)
+            resto = resto_del_sitio(base, salida)
             n = len(list((salida / 'hoy' / 'd').glob('*.json'))) if (salida / 'hoy' / 'd').exists() else 0
             feed = (salida / 'hoy' / 'feed.xml').read_text(encoding='utf-8').count('<item>') if (salida / 'hoy' / 'feed.xml').exists() else 0
             estado = 'OK' if not mal and not resto else 'FALLO'
@@ -184,10 +235,40 @@ def main():
         fallos += not bien
         # Sin privado/hoy/: se salta con un aviso.
         cod, texto = construir(tmp / 'g', '--hoy-datos', str(tmp / 'no-existe'))
-        bien = cod == 0 and 'Aviso' in texto and not (tmp / 'g' / 'hoy').exists() and not comparar(base, tmp / 'g', permitidas=('_redirects',), silencioso=True)
+        sin_enlace = not any('enlace-hoy' in (tmp / 'g' / r).read_text(encoding='utf-8') for r in PAGINAS_CON_ENLACE)
+        bien = (cod == 0 and 'Aviso' in texto and not (tmp / 'g' / 'hoy').exists() and sin_enlace
+                and not resto_del_sitio(base, tmp / 'g'))
         print(f'Sin privado/hoy/: código {cod}, aviso {"sí" if "Aviso" in texto else "NO"}, /hoy/ '
               f'{"no publicado" if not (tmp / "g" / "hoy").exists() else "PUBLICADO"} → {"OK" if bien else "FALLO"}')
         fallos += not bien
+        # Etapa 3: el formulario de correo y la página de privacidad.
+        form_bueno = tmp / 'form.html'
+        form_bueno.write_text('<form method="post" action="https://correo.example/f"><label for="e">Tu correo</label>'
+                              '<input type="email" id="e" name="email"><button type="submit">Apuntarme</button></form>', encoding='utf-8')
+        form_malo = tmp / 'form_malo.html'
+        form_malo.write_text(form_bueno.read_text(encoding='utf-8') + '<script src="https://correo.example/x.js"></script>', encoding='utf-8')
+        priv = tmp / 'privacidad.md'
+        priv.write_text('# Privacidad\n\nEdwin Zar recoge tu correo para el boletín. Contacto: [escribir](mailto:x@example.org).\n\n'
+                        '- No se cede a nadie.\n', encoding='utf-8')
+        casos_form = [
+            ('formulario y privacidad revisada', form_bueno, priv, 0, True),
+            ('formulario con un script', form_malo, priv, 1, False),
+            ('formulario con la privacidad en borrador (la de datos/)', form_bueno, RAIZ / 'datos' / 'hoy_privacidad.md', 1, False),
+        ]
+        for nombre, f, pr, cod_esperado, publicado in casos_form:
+            sal = tmp / ('form-' + str(casos_form.index((nombre, f, pr, cod_esperado, publicado))))
+            cod, texto = construir(sal, '--hoy-fecha', '2026-12-04', '--hoy-formulario', str(f), '--hoy-privacidad', str(pr))
+            pag = (sal / 'hoy' / 'index.html').read_text(encoding='utf-8') if (sal / 'hoy' / 'index.html').exists() else ''
+            hay_form = 'id="correo"' in pag and '<section class="correo" id="correo" hidden' in pag
+            hay_priv = (sal / 'privacidad' / 'index.html').exists()
+            bien = cod == cod_esperado and hay_form == publicado and hay_priv == publicado and (publicado or 'ERROR' in texto)
+            if publicado and bien:
+                pv = (sal / 'privacidad' / 'index.html').read_text(encoding='utf-8')
+                bien = ('<h1>Privacidad</h1>' in pv and '<a href="mailto:x@example.org">escribir</a>' in pv
+                        and 'href="../privacidad/"' in pag and 'Recibe cada domingo las historias de la semana' in pag)
+            print(f'Correo · {nombre}: código {cod}, formulario {"sí" if hay_form else "no"}, /privacidad/ {"sí" if hay_priv else "no"}'
+                  f' → {"OK" if bien else "FALLO"}')
+            fallos += not bien
     print('RESULTADO:', 'todo bien' if not fallos else f'{fallos} prueba(s) con fallos')
     sys.exit(1 if fallos else 0)
 

@@ -21,6 +21,7 @@
   try { CFG = JSON.parse(cfgEl.textContent); } catch (e) { return; }
   const DIAS = new Set(Array.isArray(CFG.dias) ? CFG.dias : []);
   const COMO = document.getElementById("como");   // «Cómo se juega» (texto aprobado, viene escrito en la página)
+  const CORREO = document.getElementById("correo");   // formulario de correo (si lo hay): se enseña al resolver
 
   /* ---------- fechas: las del dispositivo, en su hora local ---------- */
   const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre",
@@ -155,6 +156,7 @@
   // Una nota arriba. Con «sola», la nota sustituye a lo que hubiera; si no, se pone encima.
   function pintarNota(html, sola, conHtml) {
     if (COMO && COMO.parentNode !== main) main.insertBefore(COMO, main.querySelector(".pie"));
+    if (CORREO && CORREO.parentNode !== main) { CORREO.hidden = true; main.insertBefore(CORREO, main.querySelector(".pie")); }
     const p = document.createElement("p");
     p.className = "nota"; p.setAttribute("role", "status");
     if (conHtml) p.innerHTML = html; else p.textContent = html;
@@ -196,6 +198,7 @@
     let avisado = todoEncontrado();
 
     if (COMO && COMO.parentNode) COMO.remove();
+    if (CORREO && CORREO.parentNode) CORREO.remove();
     if (OBS) { OBS.disconnect(); OBS = null; }
     main.classList.add("con-juego");
     document.title = H.titulo + " · La historia del día · Libros de Edwin Zar";
@@ -368,12 +371,67 @@
       const res = $("resuelta");
       if (lleno && res.hidden) {
         const fuentes = Array.isArray(H.fuentes) ? H.fuentes.filter(f => typeof f === "string" && f) : [];
+        const lib = (CFG.libros || {})[H.libro];
         res.innerHTML = '<p class="final-texto">«' + esc(H.mensaje) + "»</p>" +
           '<p class="pistas-n">' + (P.p ? "Resuelta con " + P.p + (P.p === 1 ? " pista." : " pistas.") : "Resuelta sin pistas.") + "</p>" +
+          '<div class="acciones-fin"><button class="b osc" type="button" id="compartir">Compartir</button>' +
+            '<div class="msg" id="compartir-msg" role="status"></div></div>' +
+          (lib && lib.url ? '<div class="mas-libro"><p>' + (lib.titulo
+              ? "Hay más historias como esta en «" + esc(lib.titulo) + "»" + (lib.autor ? ", de " + esc(lib.autor) : "") + "."
+              : "Hay más historias como esta en los libros de Edwin Zar.") + "</p>" +
+            '<a class="b boton-libro" href="' + esc(lib.url) + '"' + (/^https?:/i.test(lib.url) ? ' target="_blank" rel="noopener"' : "") +
+            ">Más historias como esta</a></div>" : "") +
+          '<div id="sitio-correo"></div>' +
           (fuentes.length ? '<details class="fuentes"><summary>Fuentes</summary><ul>' +
             fuentes.map(f => "<li>" + esc(f) + "</li>").join("") + "</ul></details>" : "");
+        if (CORREO) { $("sitio-correo").appendChild(CORREO); CORREO.hidden = false; }
+        $("compartir").onclick = compartir;
       }
       res.hidden = !lleno;
+    }
+
+    // Compartir (ESPEC §4): fecha, título, pistas, la figura de la frase en cuadrados (recortada a su caja y de 6 × 6
+    // como mucho) y la dirección. Ni una letra de la cuadrícula.
+    const MESES_CORTOS = ["ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sept.", "oct.", "nov.", "dic."];
+    function figuraCuadros(rec) {
+      const fs = rec.map(p => p[0]), cs = rec.map(p => p[1]);
+      const f0 = Math.min.apply(null, fs), c0 = Math.min.apply(null, cs);
+      const alto = Math.max.apply(null, fs) - f0 + 1, ancho = Math.max.apply(null, cs) - c0 + 1;
+      const A = Math.min(alto, 6), B = Math.min(ancho, 6);
+      const m = [];
+      for (let i = 0; i < A; i++) m.push(new Array(B).fill(false));
+      rec.forEach(p => { m[Math.floor((p[0] - f0) * A / alto)][Math.floor((p[1] - c0) * B / ancho)] = true; });
+      return m.map(fila => fila.map(x => (x ? "🟧" : "⬜")).join(""));
+    }
+    function textoCompartir() {
+      const d = deIso(H.fecha);
+      const canon = document.querySelector('link[rel="canonical"]');
+      const dir = (canon ? canon.href : location.href).replace(/^https?:\/\//, "").replace(/[#?].*$/, "")
+        .replace(/\/+$/, "").replace(/\/hoy$/, "") + "/hoy";
+      return ["La historia del día · " + d.getDate() + " " + MESES_CORTOS[d.getMonth()] + " " + d.getFullYear(),
+        "«" + H.titulo + "»",
+        P.p ? "Resuelta con " + P.p + (P.p === 1 ? " pista" : " pistas") : "Resuelta sin pistas"]
+        .concat(figuraCuadros(H.frase_recorrido)).concat([dir]).join("\n");
+    }
+    function compartir() {
+      const texto = textoCompartir(), msg = $("compartir-msg");
+      const aMano = () => {   // si no se puede copiar, el texto a la vista, ya seleccionado
+        msg.textContent = "Copia este texto:";
+        const t = document.createElement("textarea");
+        t.className = "compartir-texto"; t.readOnly = true; t.value = texto; t.rows = texto.split("\n").length;
+        t.setAttribute("aria-label", "Texto para compartir");
+        msg.appendChild(t); t.focus(); t.select();
+      };
+      const copiar = () => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(texto).then(() => { msg.textContent = "Copiado. Pégalo donde quieras."; }, aMano);
+        } else aMano();
+      };
+      const tactil = window.matchMedia && matchMedia("(pointer: coarse)").matches;
+      if (tactil && navigator.share) {   // en el móvil, su menú de compartir (WhatsApp…)
+        navigator.share({text: texto}).then(() => { msg.textContent = ""; },
+          err => { if (!err || err.name !== "AbortError") copiar(); });
+      } else copiar();   // en el ordenador, se copia
     }
 
     function pintarDias() {

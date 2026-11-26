@@ -193,12 +193,12 @@ def revisar_amazon(carpeta, sitios):
 
 def revisar_completo(carpeta, base, sitios):
     fallos = []
-    for d in comparar(base, carpeta, permitidas=('_redirects',), silencioso=True):
+    for d in comparar(base, carpeta, permitidas=('_redirects', 'version.txt'), silencioso=True):   # version.txt cambia siempre
         fallos.append(('línea base', d.split('\n')[0]))
     for n in sorted(set(archivos(carpeta)) - set(archivos(base))):
         if n != 'version.txt' and not re.match(r'^imagenes/qr/qr-[\w.-]+\.(png|svg)$', n):
             fallos.append(('línea base', f'archivo nuevo no previsto: {n}'))
-    for n in ('privado', 'herramientas', 'docs', 'apps-script', 'datos/sitios.csv', 'README.md', 'CLAUDE.md'):
+    for n in ('privado', 'herramientas', 'docs', 'apps-script', 'datos/sitios.csv', 'datos/hoy_privacidad.md', 'README.md', 'CLAUDE.md'):
         if (carpeta / n).exists():
             fallos.append(('no se publica', f'{n} está en la carpeta del sitio completo'))
     r = reglas_redirects(carpeta / '_redirects')

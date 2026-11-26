@@ -66,7 +66,7 @@ Para «La historia del día» (`ediciones-edwin-zar.pages.dev/hoy/`). Cada día 
 ```
 {"mes": "2026-12", "titulo": "...", "autor": "Edwin Zar", "historias": [
   {"fecha": "2026-12-01", "dia_mes": "12-01", "tipo": "nivel1", "antetitulo": "La historia del día",
-   "titulo": "…", "fecha_del_hecho": "1 de diciembre de 1990 · Bajo el canal de la Mancha",
+   "titulo": "…", "fecha_del_hecho": "1 de diciembre de AAAA · Lugar",
    "relato": "…", "frase": "…", "mensaje": "…", "mensaje_letras": 25, "fuentes": ["…", "…"],
    "libro": "letras-con-historia",
    "cuadricula": {"lado": 9, "filas": [["S", …], …], "colocadas": [["FRASE", "…", [[f, c], …], null, 1],
