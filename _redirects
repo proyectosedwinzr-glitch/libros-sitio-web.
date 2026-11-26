@@ -1,5 +1,7 @@
-# Dirección fija del código QR (va dentro de la edición digital de Hotmart).
-# Lleva a la página principal: Amazon (tapa blanda) y Hotmart (edición digital), sin pestaña Colombia.
-# 302 = temporal: el destino se puede cambiar aquí sin cambiar el QR.
-/qr   /  302
-/qr/  /  302
+# Dirección del QR impreso en los libros de Amazon (ediciones-edwin-zar.pages.dev/qr): lleva al sitio Amazon.
+# El destino sale de datos/sitios.csv. 302 = temporal: se puede cambiar sin cambiar el QR.
+/qr   https://libros-edwin-zar.pages.dev/  302
+/qr/  https://libros-edwin-zar.pages.dev/  302
+# Dirección para las ediciones digitales de Hotmart: la página principal (Amazon y Hotmart).
+/digital   /  302
+/digital/  /  302

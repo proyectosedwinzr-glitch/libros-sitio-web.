@@ -21,12 +21,14 @@ body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Sans","Noto
 .etq-pest{flex:0 0 auto;align-self:center;color:#f5c542;font-weight:bold;font-size:15px;padding:0 4px 0 2px;white-space:nowrap}
 .pestanas a{flex:0 0 auto;color:#fff;text-decoration:none;padding:8px 14px;border-radius:999px;font-size:15px;white-space:nowrap;background:#ffffff1a}
 .pestanas a.activa{background:#fff;color:var(--c2);font-weight:bold}
+/* @colombia */
 .pestanas a.col{margin-left:auto;background:#fcd116;color:#003893;font-weight:bold}
 .pestanas a.col.activa{outline:3px solid #fff}
 
 .aviso{background:#fff7d6;border-bottom:1px solid #e9d27a;padding:10px 14px;text-align:center;font-size:15px}
 .aviso button{margin-left:8px}
 .aviso .x{background:none;color:var(--suave);font-size:18px;padding:0 6px}
+/* @fin-colombia */
 
 main{max-width:1000px;margin:auto;padding:16px}
 h2{color:var(--c);margin:10px 0 14px}
@@ -55,7 +57,9 @@ img.portada{padding:0;background:none;box-shadow:0 2px 8px #0003}
 .nota{font-size:13px;color:#9a5b00;margin:4px 0}
 .btn,button{background:var(--c);color:#fff;border:0;padding:11px 16px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block;font-size:15px;text-align:center}
 .btn.amz{background:var(--am);color:#111;font-weight:bold;width:100%}
+/* @colombia */
 .btn.wa{background:#25d366}
+/* @fin-colombia */
 .btn.grande{font-size:17px;padding:14px 22px}
 .btn.gr{background:#666}
 .prox{display:block;text-align:center;background:#eef1f4;color:var(--suave);border-radius:8px;padding:10px}
@@ -65,11 +69,13 @@ details ul{margin:6px 0 0;padding-left:18px}
 .tambien{font-size:13px;margin-top:8px;color:var(--suave)}
 .tambien a{color:var(--c);margin-right:8px;white-space:nowrap}
 
+/* @colombia */
 /* Colombia */
 .colombia{border-top:6px solid #fcd116}
 .colombia ol{padding-left:22px}
 .colombia ol li{margin:6px 0}
 .acciones{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+/* @fin-colombia */
 
 footer{text-align:center;color:var(--suave);font-size:13px;padding:24px 16px 40px}
 
@@ -77,7 +83,9 @@ footer{text-align:center;color:var(--suave);font-size:13px;padding:24px 16px 40p
   main{padding:12px}
   .grid{grid-template-columns:1fr;gap:14px}
   .card .portada{max-width:230px;margin:0 auto}
+  /* @colombia */
   .pestanas a.col{margin-left:0}
+  /* @fin-colombia */
   .idioma{position:static;display:block;margin-bottom:8px}
   .vitrina{justify-content:flex-start}
   .vitrina img{height:110px}
@@ -98,14 +106,20 @@ footer{text-align:center;color:var(--suave);font-size:13px;padding:24px 16px 40p
 .chips a{font-size:13px;text-decoration:none;color:var(--c);border:1px solid #cdd8e4;border-radius:6px;padding:4px 7px;white-space:nowrap}
 .chips a.on{background:var(--c);color:#fff;border-color:var(--c)}
 
+/* @hotmart */
 /* Secciones: Amazon (tapa blanda) y Hotmart (edición digital) */
+/* @fin-hotmart */
 .seccion{margin:6px 0 34px}
 .sec-titulo{font-size:clamp(21px,4.4vw,26px);margin:8px 0 12px;padding-bottom:8px;border-bottom:3px solid var(--am)}
+/* @hotmart */
 .hotmart .sec-titulo{border-color:#f04e23}
+/* @fin-hotmart */
 .sec-nota{margin:-4px 0 14px;color:var(--suave)}
+/* @hotmart */
 .btn.hot{background:#f04e23;color:#fff;font-weight:bold;width:100%}
 
 /* Acceso rápido a las secciones */
 .accesos{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:4px 0 18px}
 .accesos a{flex:1 1 220px;max-width:340px;text-align:center;text-decoration:none;font-weight:bold;font-size:16px;padding:12px 14px;border-radius:10px;background:var(--am);color:#111;box-shadow:0 1px 4px #0002}
 .accesos a.a-hot{background:#f04e23;color:#fff}
+/* @fin-hotmart */

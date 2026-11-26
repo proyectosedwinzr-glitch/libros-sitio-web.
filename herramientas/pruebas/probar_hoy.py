@@ -6,6 +6,7 @@ qué se publica (y qué NO se publica). Solo biblioteca estándar.
     python3 -I herramientas/pruebas/probar_hoy.py BASE_ANTES
 
 BASE_ANTES: la construcción del sitio de antes del cambio (etapa 0), para comparar el resto del sitio.
+(_redirects puede cambiar: desde los dos sitios, /qr lleva al sitio Amazon; lo vigila comprobar_sitios.py.)
 
 Para cada fecha simulada se calcula aparte, desde el JSON del mes, lo que debería publicarse
 (7 días anteriores, el de hoy y los próximos N) y se compara con lo construido:
@@ -151,7 +152,7 @@ def main():
             salida = tmp / f'e{i}'
             cod, texto = construir(salida, '--hoy-fecha', fecha, '--hoy-dias', str(dias), *(['--hoy-prueba'] if prueba else []))
             mal = revisar(salida, historias, fecha, dias, portada, prueba) if cod == 0 else [f'la construcción salió con {cod}']
-            resto = comparar(base, salida, silencioso=True)
+            resto = comparar(base, salida, permitidas=('_redirects',), silencioso=True)
             n = len(list((salida / 'hoy' / 'd').glob('*.json'))) if (salida / 'hoy' / 'd').exists() else 0
             feed = (salida / 'hoy' / 'feed.xml').read_text(encoding='utf-8').count('<item>') if (salida / 'hoy' / 'feed.xml').exists() else 0
             estado = 'OK' if not mal and not resto else 'FALLO'
@@ -183,7 +184,7 @@ def main():
         fallos += not bien
         # Sin privado/hoy/: se salta con un aviso.
         cod, texto = construir(tmp / 'g', '--hoy-datos', str(tmp / 'no-existe'))
-        bien = cod == 0 and 'Aviso' in texto and not (tmp / 'g' / 'hoy').exists() and not comparar(base, tmp / 'g', silencioso=True)
+        bien = cod == 0 and 'Aviso' in texto and not (tmp / 'g' / 'hoy').exists() and not comparar(base, tmp / 'g', permitidas=('_redirects',), silencioso=True)
         print(f'Sin privado/hoy/: código {cod}, aviso {"sí" if "Aviso" in texto else "NO"}, /hoy/ '
               f'{"no publicado" if not (tmp / "g" / "hoy").exists() else "PUBLICADO"} → {"OK" if bien else "FALLO"}')
         fallos += not bien

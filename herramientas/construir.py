@@ -22,6 +22,16 @@ herramientas/hoy/validar_hoy.py y, solo si no hay fallos, publica:
   • hoy/feed.xml con los días publicados hasta hoy.
 Si privado/hoy/ no existe, el paso se salta con un aviso y el resto del sitio se construye igual.
 
+Dos sitios desde el mismo repositorio (datos/sitios.csv; ver docs/dos_sitios/):
+  • --sitio completo (por defecto): lo de siempre (Amazon, Hotmart, pedidos de Colombia y /hoy/). Su _redirects
+    lleva /qr al sitio Amazon y /digital a la página principal (para las ediciones de Hotmart).
+  • --sitio amazon: solo libros de Amazon, construido por lista blanca (páginas, estilos.css, app.js y config.js
+    sin Hotmart ni pedidos de Colombia, catalogo.csv, idiomas.csv, textos.csv filtrado, imágenes, portadas,
+    _redirects y version.txt). Necesita --salida. app.js y estilos.css llevan marcas «@hotmart» y «@colombia»:
+    el sitio Amazon quita lo marcado; el completo solo quita las marcas (queda como antes).
+  • Los dos escriben version.txt (sitio, fecha y commit). --zip crea sitio-<nombre>-AAAA-MM-DD.zip, al lado de la
+    carpeta de salida, listo para arrastrar a Cloudflare.
+
 Para probarlo en tu computador sin tocar los archivos originales:
     python3 herramientas/construir.py --salida /ruta/a/una/carpeta/vacia
 Opciones del paso «hoy»: --hoy-fecha AAAA-MM-DD (fecha simulada), --hoy-dias N,
@@ -33,11 +43,11 @@ apps-script/, README.md, CLAUDE.md.
 
 Solo usa la biblioteca estándar de Python.
 """
-import csv, html, json, re, shutil, subprocess, sys, unicodedata
-from datetime import date, timedelta
+import csv, html, io, json, os, re, shutil, subprocess, sys, unicodedata, zipfile
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
-SITIO = 'https://ediciones-edwin-zar.pages.dev'          # dirección pública (para canonical, hreflang y og:)
+SITIO = 'https://ediciones-edwin-zar.pages.dev'          # dirección pública (canonical, hreflang, og:); la pone datos/sitios.csv
 IMAGEN_COMPARTIR = SITIO + '/imagenes/compartir.jpg'
 LOCALE_OG = {'es': 'es_ES', 'en': 'en_US', 'fr': 'fr_FR', 'it': 'it_IT', 'de': 'de_DE', 'ja': 'ja_JP'}
 # Tienda que se muestra sin JavaScript (con JavaScript, el visitante elige su país).
@@ -511,16 +521,235 @@ def paso_hoy(D, raiz, salida, fecha, dias, carpeta, prueba=False):
 
 
 # Lo que no es del sitio y no se copia a la carpeta de salida (privado/ NUNCA).
-NO_PUBLICAR = {'privado', 'herramientas', 'docs', 'apps-script', 'README.md', 'CLAUDE.md', '.gitignore', '.nojekyll'}
+NO_PUBLICAR = {'privado', 'herramientas', 'docs', 'apps-script', 'README.md', 'CLAUDE.md', '.gitignore', '.nojekyll',
+               'version.txt'}
+NO_PUBLICAR_DENTRO = {'datos': {'sitios.csv'}}   # configuración de la construcción, dentro de una carpeta del sitio
 
 
-def ignorar_al_copiar(raiz):
+def ignorar_al_copiar(raiz, salida=None):
     def f(carpeta, nombres):
         fuera = {n for n in nombres if n in ('.git', '__pycache__', 'node_modules')}
-        if Path(carpeta).resolve() == raiz:
-            fuera |= {n for n in nombres if n in NO_PUBLICAR}
+        c = Path(carpeta).resolve()
+        if c == raiz:
+            fuera |= {n for n in nombres if n in NO_PUBLICAR or n.startswith('salida-')
+                      or (n.startswith('sitio-') and n.endswith('.zip'))}
+        elif c.parent == raiz and c.name in NO_PUBLICAR_DENTRO:
+            fuera |= {n for n in nombres if n in NO_PUBLICAR_DENTRO[c.name]}
+        if salida is not None:
+            fuera |= {n for n in nombres if (c / n).resolve() == salida}   # la carpeta de salida, si está dentro
         return fuera
     return f
+
+
+# ---------------------------------------------------------------- dos sitios: completo y Amazon (datos/sitios.csv)
+SECCIONES = ('hotmart', 'colombia')
+# Claves de datos/textos.csv que no van a un sitio sin esa sección.
+TEXTOS_DE = {'hotmart': ('hotmart_', 'acceso_hotmart', 'sec_hotmart'),
+             'colombia': ('colombia_', 'aviso_colombia', 'pais_co_pedido')}
+MARCA_LINEA = re.compile(r'^[ \t]*(?://[ \t]*@(fin-)?([a-z]+)|/\*[ \t]*@(fin-)?([a-z]+)[ \t]*\*/)[ \t]*\r?$')
+MARCA_EN_LINEA = re.compile(r'/\*@(fin-)?([a-z]+)\*/')
+
+
+def leer_sitios(raiz):
+    filas = {}
+    with (raiz / 'datos' / 'sitios.csv').open(encoding='utf-8-sig', newline='') as f:
+        for r in csv.DictReader(f):
+            nombre = (r.get('sitio') or '').strip()
+            if not nombre:
+                continue
+            url = (r.get('url') or '').strip().rstrip('/')
+            if not re.match(r'^https://[a-z0-9.-]+$', url, re.I):
+                raise SystemExit(f'datos/sitios.csv: la dirección del sitio «{nombre}» no es válida: «{url}»')
+            filas[nombre] = {'url': url, 'qr_destino': (r.get('qr_destino') or '').strip(),
+                             **{k: si(r.get(k), False) for k in ('hotmart', 'colombia', 'hoy', 'indexar')}}
+            if not filas[nombre]['qr_destino']:
+                raise SystemExit(f'datos/sitios.csv: falta el destino de /qr del sitio «{nombre}»')
+    for n in ('completo', 'amazon'):
+        if n not in filas:
+            raise SystemExit(f'datos/sitios.csv: falta el sitio «{n}»')
+    return filas
+
+
+def recortar(texto, quitar, nombre, exigir=SECCIONES):
+    """Marcas de sección de app.js y estilos.css. Una línea «// @hotmart» … «// @fin-hotmart» (en CSS,
+    «/* @hotmart */» … «/* @fin-hotmart */») encierra líneas enteras; «/*@hotmart*/ … /*@fin-hotmart*/», un trozo
+    de una línea. Siempre se quitan las marcas; lo marcado, solo si su sección está en «quitar». Sin nada que quitar,
+    el archivo queda byte a byte como era antes de marcarlo. Falla (regla 7) si una marca no se cierra, si no se
+    conoce o si falta alguna sección de «exigir»."""
+    vistas, salida, abierta = set(), [], None
+    for n, linea in enumerate(texto.split('\n'), 1):
+        m = MARCA_LINEA.match(linea)
+        if m:
+            fin, tipo = (m.group(1), m.group(2)) if m.group(2) else (m.group(3), m.group(4))
+            if tipo not in SECCIONES:
+                raise SystemExit(f'{nombre}, línea {n}: marca desconocida «@{tipo}»')
+            if fin:
+                if abierta != tipo:
+                    raise SystemExit(f'{nombre}, línea {n}: «@fin-{tipo}» sin su «@{tipo}»')
+                abierta = None
+            else:
+                if abierta:
+                    raise SystemExit(f'{nombre}, línea {n}: «@{tipo}» dentro de «@{abierta}»')
+                abierta = tipo
+                vistas.add(tipo)
+            continue
+        if abierta in quitar:
+            continue
+        partes, pos, dentro, inicio = [], 0, None, 0
+        for mm in MARCA_EN_LINEA.finditer(linea):
+            fin, tipo = mm.group(1), mm.group(2)
+            if tipo not in SECCIONES:
+                raise SystemExit(f'{nombre}, línea {n}: marca desconocida «@{tipo}»')
+            if not fin:
+                if dentro:
+                    raise SystemExit(f'{nombre}, línea {n}: «/*@{tipo}*/» dentro de «/*@{dentro}*/»')
+                partes.append(linea[pos:mm.start()])
+                dentro, inicio = tipo, mm.end()
+                vistas.add(tipo)
+            else:
+                if dentro != tipo:
+                    raise SystemExit(f'{nombre}, línea {n}: «/*@fin-{tipo}*/» sin su «/*@{tipo}*/»')
+                if tipo not in quitar:
+                    partes.append(linea[inicio:mm.start()])
+                dentro = None
+            pos = mm.end()
+        if dentro:
+            raise SystemExit(f'{nombre}, línea {n}: «/*@{dentro}*/» sin cerrar en la misma línea')
+        partes.append(linea[pos:])
+        salida.append(''.join(partes))
+    if abierta:
+        raise SystemExit(f'{nombre}: «@{abierta}» sin cerrar')
+    faltan = [t for t in exigir if t not in vistas]
+    if faltan:
+        raise SystemExit(f'{nombre}: no se encontró ninguna marca «@{faltan[0]}» (¿se borraron?)')
+    return '\n'.join(salida)
+
+
+def sin_pedidos(config):
+    """config.js de un sitio sin pedidos de Colombia: sin la dirección de la app de pedidos ni el WhatsApp."""
+    for clave in ('URL_COLOMBIA', 'WHATSAPP'):
+        config, n = re.subn(rf'\n[ \t]*//[^\n]*\n[ \t]*{clave}[ \t]*:[^\n]*\n(?:[ \t]*\n)?', '\n', config, count=1)
+        if n != 1 or re.search(rf'\b{clave}\b', config):
+            raise SystemExit(f'config.js: no se pudo quitar «{clave}» (con su comentario encima) para el sitio sin pedidos')
+    return config
+
+
+def textos_sin(ruta, quitar):
+    """datos/textos.csv sin las claves de las secciones de «quitar». Falla si alguna sección no tenía ninguna."""
+    with ruta.open(encoding='utf-8-sig', newline='') as f:
+        filas = list(csv.reader(f))
+    quedan, quitadas = [filas[0]], {s: 0 for s in quitar}
+    for r in filas[1:]:
+        clave = (r[0] if r else '').strip()
+        de = next((s for s in quitar if clave.startswith(TEXTOS_DE[s])), None)
+        if de:
+            quitadas[de] += 1
+        else:
+            quedan.append(r)
+    for sec, n in quitadas.items():
+        if not n:
+            raise SystemExit(f'datos/textos.csv: no hay ningún texto de «{sec}» que quitar (¿cambiaron las claves?)')
+    out = io.StringIO()
+    csv.writer(out, lineterminator='\n').writerows(quedan)
+    return out.getvalue()
+
+
+def texto_redirects(nombre, cfg):
+    destino = cfg['qr_destino']
+    if nombre == 'completo':
+        return ('# Dirección del QR impreso en los libros de Amazon (ediciones-edwin-zar.pages.dev/qr): lleva al sitio Amazon.\n'
+                '# El destino sale de datos/sitios.csv. 302 = temporal: se puede cambiar sin cambiar el QR.\n'
+                f'/qr   {destino}  302\n/qr/  {destino}  302\n'
+                '# Dirección para las ediciones digitales de Hotmart: la página principal (Amazon y Hotmart).\n'
+                '/digital   /  302\n/digital/  /  302\n')
+    return ('# Dirección del QR impreso en los productos de Amazon: la página principal de este sitio.\n'
+            f'/qr   {destino}  302\n/qr/  {destino}  302\n')
+
+
+def texto_version(raiz, nombre):
+    """Para comprobar, tras subir un zip, que se subió el sitio correcto al proyecto correcto (/version.txt)."""
+    commit, sucio = os.environ.get('CF_PAGES_COMMIT_SHA', '')[:7], False
+    if not commit:
+        try:
+            git = lambda *a: subprocess.run(['git', '-C', str(raiz), *a], capture_output=True, text=True, timeout=20).stdout.strip()
+            commit = git('rev-parse', '--short', 'HEAD')
+            sucio = bool(commit and git('status', '--porcelain', '--untracked-files=no'))
+        except (OSError, subprocess.SubprocessError):
+            commit = ''
+    commit = (commit or 'desconocido') + (' (con cambios sin guardar)' if sucio else '')
+    return f'sitio: {nombre} · construido: {datetime.now().strftime("%Y-%m-%d %H:%M")} · commit: {commit}\n'
+
+
+def leer_tal_cual(ruta):
+    with open(ruta, encoding='utf-8', newline='') as f:
+        return f.read()
+
+
+def escribir_tal_cual(ruta, texto):
+    ruta.parent.mkdir(parents=True, exist_ok=True)
+    with open(ruta, 'w', encoding='utf-8', newline='') as f:
+        f.write(texto)
+
+
+def comprimir(salida, nombre):
+    """El contenido de la carpeta de salida en sitio-<nombre>-AAAA-MM-DD.zip, al lado de la carpeta: listo para arrastrar."""
+    destino = salida.parent / f'sitio-{nombre}-{date.today().isoformat()}.zip'
+    with zipfile.ZipFile(destino, 'w', zipfile.ZIP_DEFLATED) as z:
+        for p in sorted(salida.rglob('*')):
+            if p.is_file():
+                z.write(p, p.relative_to(salida).as_posix())
+    return destino
+
+
+def construir_lista_blanca(D, raiz, salida, plantilla, pags, cfg, nombre):
+    """Un sitio sin alguna sección (el Amazon): solo lleva lo que necesita y, de app.js, estilos.css, config.js y
+    textos.csv, quita lo de las secciones que no lleva. Nunca copia hotmart.csv, apps-script/, colombia.html,
+    contraentrega.html, internacional.html, herramientas/, docs/ ni privado/."""
+    if salida == raiz:
+        raise SystemExit(f'El sitio «{nombre}» solo se construye en una carpeta aparte: añade --salida CARPETA.')
+    quitar = {s for s in SECCIONES if not cfg[s]}
+    if salida.exists():
+        shutil.rmtree(salida)
+    salida.mkdir(parents=True)
+    escritas = []
+
+    def escribir(rel, contenido):
+        escribir_tal_cual(salida / rel, contenido)
+        escritas.append(rel)
+
+    def copiar(rel):
+        (salida / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(raiz / rel, salida / rel)
+
+    def robots(h):
+        return h if cfg['indexar'] else sustituir(h, '<meta charset="utf-8">',
+                                                  '<meta charset="utf-8">\n<meta name="robots" content="noindex">')
+
+    secciones = dict(con_colombia=cfg['colombia'], con_hotmart=cfg['hotmart'])
+    for lang in D.paginas:
+        escribir(f'{lang}/index.html', robots(pagina(D, plantilla, lang, '../', f'{SITIO}/{lang}/', f'{SITIO}/{lang}/',
+                 f'window.CONFIG.IDIOMA_PAGINA = "{lang}"; window.CONFIG.PAGINAS_IDIOMA = {pags};', **secciones)))
+    escribir('index.html', robots(pagina(D, plantilla, 'es', '', f'{SITIO}/', f'{SITIO}/', '', **secciones)))
+    escribir('app.js', recortar(leer_tal_cual(raiz / 'app.js'), quitar, 'app.js'))
+    escribir('estilos.css', recortar(leer_tal_cual(raiz / 'estilos.css'), quitar, 'estilos.css'))
+    config = leer_tal_cual(raiz / 'config.js')
+    escribir('config.js', sin_pedidos(config) if 'colombia' in quitar else config)
+    escribir('datos/textos.csv', textos_sin(raiz / 'datos' / 'textos.csv', quitar))
+    for rel in ('datos/catalogo.csv', 'datos/idiomas.csv'):
+        copiar(rel)
+    for carpeta in ('imagenes', 'portadas'):
+        for f in sorted((raiz / carpeta).rglob('*')):
+            rel = f.relative_to(raiz)
+            if f.is_file() and not f.name.startswith('.') and not (carpeta == 'imagenes' and len(rel.parts) > 2 and rel.parts[1] == 'qr'):
+                copiar(rel.as_posix())   # los QR son para imprimir: no hace falta servirlos
+    escribir('_redirects', texto_redirects(nombre, cfg))
+    if cfg['hoy']:   # /hoy/ (solo con subida directa: necesita privado/hoy/): los archivos fijos; el paso «hoy» hace el resto
+        for f in sorted((raiz / 'hoy').rglob('*')):
+            rel = f.relative_to(raiz)
+            if f.is_file() and rel.parts[1] not in ('index.html', 'feed.xml', 'd'):
+                copiar(rel.as_posix())
+    print(f'Listo (sitio {nombre}): {len(D.libros)} libros; sin {" ni ".join(sorted(quitar)) or "nada quitado"}; '
+          f'{"se indexa" if cfg["indexar"] else "noindex"}; páginas: {", ".join(escritas[:len(D.paginas) + 1])}')
 
 
 def opcion(nombre, defecto=None):
@@ -533,6 +762,7 @@ def opcion(nombre, defecto=None):
 
 
 def main():
+    global SITIO, IMAGEN_COMPARTIR
     raiz = Path(__file__).resolve().parent.parent
     try:
         fecha_hoy = date.fromisoformat(opcion('--hoy-fecha', date.today().isoformat()))
@@ -542,44 +772,77 @@ def main():
     if dias_hoy < 0:
         raise SystemExit('--hoy-dias no puede ser negativo')
     datos_hoy = Path(opcion('--hoy-datos', str(raiz / 'privado' / 'hoy'))).resolve()
-    salida = raiz
-    if '--salida' in sys.argv:
-        salida = Path(opcion('--salida')).resolve()
-        if salida != raiz:
-            if salida.exists(): shutil.rmtree(salida)
-            shutil.copytree(raiz, salida, ignore=ignorar_al_copiar(raiz))
+    sitios = leer_sitios(raiz)
+    nombre = opcion('--sitio', 'completo')
+    if nombre not in sitios:
+        raise SystemExit(f'--sitio: «{nombre}» no está en datos/sitios.csv (hay: {", ".join(sitios)})')
+    cfg = sitios[nombre]
+    SITIO = cfg['url']
+    IMAGEN_COMPARTIR = SITIO + '/imagenes/compartir.jpg'
+    salida = Path(opcion('--salida')).resolve() if '--salida' in sys.argv else raiz
     plantilla = (raiz / 'index.html').read_text(encoding='utf-8')
     D = Datos(raiz)
     if not D.libros:
         raise SystemExit('No hay libros en datos/catalogo.csv')
     pags = repr(D.paginas).replace("'", '"')
 
-    escritas = []
-    def escribir(rel, contenido):
-        p = salida / rel
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(contenido, encoding='utf-8')
-        escritas.append(rel)
+    if nombre != 'completo':
+        construir_lista_blanca(D, raiz, salida, plantilla, pags, cfg, nombre)
+    else:
+        if salida != raiz:
+            if salida.exists(): shutil.rmtree(salida)
+            shutil.copytree(raiz, salida, ignore=ignorar_al_copiar(raiz, salida))
+            # Las marcas de sección se quitan (en la carpeta del repositorio se quedan: son comentarios).
+            for f in ('app.js', 'estilos.css'):
+                escribir_tal_cual(salida / f, recortar(leer_tal_cual(raiz / f), set(), f))
+        escritas = []
+        def escribir(rel, contenido):
+            p = salida / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(contenido, encoding='utf-8')
+            escritas.append(rel)
 
-    # 1) Páginas por idioma de los libros
-    for lang in D.paginas:
-        escribir(f'{lang}/index.html', pagina(D, plantilla, lang, '../', f'{SITIO}/{lang}/', f'{SITIO}/{lang}/',
-                 f'window.CONFIG.IDIOMA_PAGINA = "{lang}"; window.CONFIG.PAGINAS_IDIOMA = {pags}; window.CONFIG.MOSTRAR_COLOMBIA = false;',
-                 con_colombia=False))
-    # 2) Página principal: limpia (sin pestaña Colombia), con Amazon y Hotmart
-    escribir('index.html', pagina(D, plantilla, 'es', '', f'{SITIO}/', f'{SITIO}/',
-             'window.CONFIG.MOSTRAR_COLOMBIA = false;', con_colombia=False))
-    # 3) Pedidos en Colombia (pago Bre-B): /colombia abre directo en la pestaña Colombia
-    escribir('colombia.html', pagina(D, plantilla, 'es', '', f'{SITIO}/colombia', f'{SITIO}/colombia',
-             "window.CONFIG.PESTANA_INICIAL = 'colombia';"))
-    escribir('internacional.html', pagina(D, plantilla, 'es', '', f'{SITIO}/internacional', f'{SITIO}/',
-             'window.CONFIG.MOSTRAR_COLOMBIA = false; window.CONFIG.MOSTRAR_HOTMART = false;',
-             con_colombia=False, con_hotmart=False))
-    escribir('contraentrega.html', pagina(D, plantilla, 'es', '', f'{SITIO}/contraentrega', f'{SITIO}/',
-             "window.CONFIG.PAGO_COLOMBIA = 'contraentrega';"))
-    print(f'Listo: {len(D.libros)} libros, {len(D.hotmart)} productos de Hotmart, páginas: {", ".join(escritas)}')
-    # 4) «La historia del día» (/hoy/): al final, para que un fallo suyo no impida construir el resto
-    return paso_hoy(D, raiz, salida, fecha_hoy, dias_hoy, datos_hoy, prueba='--hoy-prueba' in sys.argv)
+        # 1) Páginas por idioma de los libros
+        for lang in D.paginas:
+            escribir(f'{lang}/index.html', pagina(D, plantilla, lang, '../', f'{SITIO}/{lang}/', f'{SITIO}/{lang}/',
+                     f'window.CONFIG.IDIOMA_PAGINA = "{lang}"; window.CONFIG.PAGINAS_IDIOMA = {pags}; window.CONFIG.MOSTRAR_COLOMBIA = false;',
+                     con_colombia=False))
+        # 2) Página principal: limpia (sin pestaña Colombia), con Amazon y Hotmart
+        escribir('index.html', pagina(D, plantilla, 'es', '', f'{SITIO}/', f'{SITIO}/',
+                 'window.CONFIG.MOSTRAR_COLOMBIA = false;', con_colombia=False))
+        # 3) Pedidos en Colombia (pago Bre-B): /colombia abre directo en la pestaña Colombia
+        escribir('colombia.html', pagina(D, plantilla, 'es', '', f'{SITIO}/colombia', f'{SITIO}/colombia',
+                 "window.CONFIG.PESTANA_INICIAL = 'colombia';"))
+        escribir('internacional.html', pagina(D, plantilla, 'es', '', f'{SITIO}/internacional', f'{SITIO}/',
+                 'window.CONFIG.MOSTRAR_COLOMBIA = false; window.CONFIG.MOSTRAR_HOTMART = false;',
+                 con_colombia=False, con_hotmart=False))
+        escribir('contraentrega.html', pagina(D, plantilla, 'es', '', f'{SITIO}/contraentrega', f'{SITIO}/',
+                 "window.CONFIG.PAGO_COLOMBIA = 'contraentrega';"))
+        # /qr del completo → sitio Amazon; /digital → página principal (para las ediciones de Hotmart)
+        escribir('_redirects', texto_redirects(nombre, cfg))
+        print(f'Listo (sitio completo): {len(D.libros)} libros, {len(D.hotmart)} productos de Hotmart, páginas: {", ".join(escritas)}')
+    # «La historia del día» (/hoy/): al final, para que un fallo suyo no impida construir el resto
+    if cfg['hoy']:
+        codigo = paso_hoy(D, raiz, salida, fecha_hoy, dias_hoy, datos_hoy, prueba='--hoy-prueba' in sys.argv)
+        if not cfg['indexar'] and (salida / 'hoy' / 'index.html').exists():
+            pag = salida / 'hoy' / 'index.html'
+            h = pag.read_text(encoding='utf-8')
+            if 'name="robots"' not in h:
+                pag.write_text(sustituir(h, '<meta charset="utf-8">', '<meta charset="utf-8">\n<meta name="robots" content="noindex">'),
+                               encoding='utf-8')
+    else:
+        codigo = 0
+        if salida != raiz and (salida / 'hoy').exists():
+            shutil.rmtree(salida / 'hoy')
+    escribir_tal_cual(salida / 'version.txt', texto_version(raiz, nombre))
+    if '--zip' in sys.argv:
+        if salida == raiz:
+            raise SystemExit('--zip necesita --salida (una carpeta aparte)')
+        if codigo:
+            print('No se crea el zip: la construcción tuvo un fallo (mira arriba).')
+        else:
+            print(f'Zip para subir: {comprimir(salida, nombre)}')
+    return codigo
 
 
 if __name__ == '__main__':

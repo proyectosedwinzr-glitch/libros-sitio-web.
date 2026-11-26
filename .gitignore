@@ -16,3 +16,7 @@ __pycache__/
 /hoy/d/
 # Dependencias de las pruebas (npm), fuera de la construcción
 /herramientas/pruebas/node_modules/
+# Lo que escribe construir.py (versión, carpetas de salida dentro del repositorio y zips)
+/version.txt
+/salida-*/
+/sitio-*.zip

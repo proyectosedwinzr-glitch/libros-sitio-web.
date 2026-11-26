@@ -18,6 +18,16 @@ Lo lee Claude Code al empezar cada sesión en este repositorio. Léelo entero.
 - **El README habla de GitHub Pages:** está desactualizado. El sitio vive en Cloudflare Pages.
 - **Antes de dar por bueno cualquier cambio:** construir en una carpeta aparte y comprobar que `/`, `/es/`,
   `/colombia`, `/contraentrega` y `/qr` siguen igual (diferencia de su HTML antes y después).
+- **Dos sitios desde el mismo repositorio** (desde el 25 de noviembre de 2026):
+  - completo (`ediciones-edwin-zar.pages.dev`): Amazon, Hotmart, pedidos de Colombia y /hoy/;
+  - Amazon (dirección en `datos/sitios.csv`): solo libros de Amazon. Es lo que se imprime en los productos de Amazon.
+  - `construir.py --sitio completo|amazon`.
+  - En el sitio Amazon no puede aparecer nada de Hotmart ni de los pedidos de Colombia, en ningún archivo:
+    lo comprueba `herramientas/pruebas/comprobar_sitios.py`.
+  - `/qr` del completo lleva al sitio Amazon; `/digital` es la dirección para las ediciones de Hotmart.
+  - En `app.js` y `estilos.css`, todo lo de Hotmart y de los pedidos de Colombia va entre marcas (`// @hotmart` …
+    `// @fin-hotmart`, `/*@colombia*/ … /*@fin-colombia*/`; ver `recortar()` en `construir.py`). Lo nuevo de esas
+    secciones se marca igual.
 
 ## Lo que se añade: «La historia del día» en `/hoy/`
 
