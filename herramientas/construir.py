@@ -758,7 +758,7 @@ def textos_sin(ruta, quitar):
     return out.getvalue()
 
 
-def texto_redirects(nombre, cfg):
+def texto_redirects(nombre, cfg, con_hoy=False):
     destino = cfg['qr_destino']
     if nombre == 'completo':
         return ('# Dirección del QR impreso en los libros de Amazon (ediciones-edwin-zar.pages.dev/qr): lleva al sitio Amazon.\n'
@@ -766,10 +766,10 @@ def texto_redirects(nombre, cfg):
                 f'/qr   {destino}  302\n/qr/  {destino}  302\n'
                 '# Dirección para las ediciones digitales de Hotmart: la página principal (Amazon y Hotmart).\n'
                 '/digital   /  302\n/digital/  /  302\n'
-                + ('# Dirección fácil de «La historia del día».\n/historia-del-dia  /hoy/  301\n' if cfg['hoy'] else ''))
+                + ('# Dirección fácil de «La historia del día».\n/historia-del-dia  /hoy/  301\n' if con_hoy else ''))
     return ('# Dirección del QR impreso en los productos de Amazon: la página principal de este sitio.\n'
             f'/qr   {destino}  302\n/qr/  {destino}  302\n'
-            + ('# Dirección fácil de «La historia del día».\n/historia-del-dia  /hoy/  301\n' if cfg['hoy'] else ''))
+            + ('# Dirección fácil de «La historia del día».\n/historia-del-dia  /hoy/  301\n' if con_hoy else ''))
 
 
 def texto_version(raiz, nombre):
@@ -848,7 +848,7 @@ def construir_lista_blanca(D, raiz, salida, plantilla, pags, cfg, nombre, con_ho
             rel = f.relative_to(raiz)
             if f.is_file() and not f.name.startswith('.') and not (carpeta == 'imagenes' and len(rel.parts) > 2 and rel.parts[1] == 'qr'):
                 copiar(rel.as_posix())   # los QR son para imprimir: no hace falta servirlos
-    escribir('_redirects', texto_redirects(nombre, cfg))
+    escribir('_redirects', texto_redirects(nombre, cfg, con_hoy))
     if cfg['hoy']:   # /hoy/ (solo con subida directa: necesita privado/hoy/): los archivos fijos; el paso «hoy» hace el resto
         for f in sorted((raiz / 'hoy').rglob('*')):
             rel = f.relative_to(raiz)
@@ -927,7 +927,7 @@ def main():
         escribir('contraentrega.html', pagina(D, plantilla, 'es', '', f'{SITIO}/contraentrega', f'{SITIO}/',
                  "window.CONFIG.PAGO_COLOMBIA = 'contraentrega';"))
         # /qr del completo → sitio Amazon; /digital → página principal (para las ediciones de Hotmart)
-        escribir('_redirects', texto_redirects(nombre, cfg))
+        escribir('_redirects', texto_redirects(nombre, cfg, hay_hoy))
         print(f'Listo (sitio completo): {len(D.libros)} libros, {len(D.hotmart)} productos de Hotmart, páginas: {", ".join(escritas)}')
     # «La historia del día» (/hoy/): al final, para que un fallo suyo no impida construir el resto
     if cfg['hoy']:
