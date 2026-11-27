@@ -380,3 +380,38 @@ python3 herramientas/construir.py --salida /tmp/prueba-hoy --hoy-fecha 2026-12-0
 - **El texto de privacidad** es un borrador: no es asesoría legal.
 - **Si el validador falla** (un mes con un error), el enlace de la cabecera sigue apuntando a `/hoy/`, que no se publica;
   la construcción sale con error y sin zip, así que no se sube.
+
+## Etapa 4 · Ensayo general · 27 de noviembre de 2026
+
+- **La construcción de lanzamiento:** `python3 herramientas/construir.py --sitio completo --salida … --zip`, desde el
+  commit `fb0793c` (el mismo que está en `main`), el 27 de noviembre. Publica las 31 historias de diciembre; la portada
+  escrita enseña el aviso (la primera historia llega el 1 de diciembre) y el feed aún está vacío. El juego pasa solo al
+  día del dispositivo, así que esta misma carpeta sirve para todo diciembre.
+- **`herramientas/pruebas/ensayo.js`, sobre esa carpeta exacta**, con la fecha del dispositivo:
+
+  | Día | Sale |
+  |---|---|
+  | 30 de noviembre | solo el aviso, sin cuadrícula |
+  | 1, 15 y 31 de diciembre | la historia de ese día |
+  | 1 de enero, sin el archivo de enero | la del 31 de diciembre, con la nota amable |
+
+  En todos, ninguna petición a terceros y ningún error. La cabecera del catálogo lleva a `/hoy/`; `_redirects` (`/qr` al
+  sitio Amazon, `/digital`, `/historia-del-dia`) y `version.txt` («sitio: completo»), bien. 2/2 defectos plantados (el
+  archivo del 15 que falta y una petición a un tercero).
+- **Capturas y axe** del catálogo y de `/hoy/` (390, 820 y 1280 px): `/hoy/` sin infracciones; el enlace nuevo de la
+  cabecera, bien. **En el catálogo del sitio completo, axe señala el contraste de los botones naranjas de Hotmart**
+  (texto blanco sobre `#f04e23`): es de antes (no lo ha traído este trabajo) y no se ha cambiado sin preguntar al autor.
+- **El autor ya jugó** en su móvil (página privada de prueba en Claude) y sus avisos se corrigieron (letras compartidas,
+  toques sueltos).
+
+### Lanzamiento (30 de noviembre): pasos del autor
+
+1. Subir `sitio-completo-2026-11-27.zip` a `ediciones-edwin-zar` (Create deployment). **No antes del 30**: el zip lleva
+   ya las historias de diciembre.
+2. Abrir `https://ediciones-edwin-zar.pages.dev/version.txt`: tiene que decir `sitio: completo`.
+3. Activar **Web Analytics** en el panel de Cloudflare (sin cookies).
+4. Probar en el móvil `ediciones-edwin-zar.pages.dev/hoy/` (el 30, el aviso; el 1, la primera historia) y `/qr` (tiene que
+   acabar en el sitio Amazon).
+
+**Antes del 15 de diciembre:** el mes de enero en `privado/hoy/` y una subida nueva (si no, desde el 1 de enero se ve la del
+31 de diciembre con la nota amable).

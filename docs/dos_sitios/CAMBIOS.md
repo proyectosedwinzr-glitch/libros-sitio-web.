@@ -86,6 +86,19 @@ Cada etapa: qué se hizo, qué se comprobó y **qué no cubren las comprobacione
 5. Escanear con dos móviles el QR impreso de un libro (`ediciones-edwin-zar.pages.dev/qr`, tiene que acabar en el sitio
    Amazon) y el QR nuevo, impreso a 2,5 cm.
 
+### Etapa 4 · 27 de noviembre: en marcha
+
+- **Juntado en `main`** (petición #15, con el visto bueno del autor; commit `fb0793c`).
+- **Simulación de Cloudflare** antes de juntar: una copia limpia de la rama, sin `privado/`, con Python 3.11 y el comando
+  `python3 herramientas/construir.py --sitio amazon --salida salida-amazon` da el sitio Amazon correcto; con el comando
+  antiguo (dentro del repositorio), el sitio completo sin `/hoy/`.
+- **Comprobado en la red** (entorno de la sesión con acceso a `libros-edwin-zar.pages.dev` y `ediciones-edwin-zar.pages.dev`):
+  `https://libros-edwin-zar.pages.dev/qr` responde y redirige (302) a su página principal, así que **el QR nuevo ya
+  funciona**. Pero 5 minutos después de juntar, el proyecto seguía sin `version.txt`: Cloudflare no había construido con el
+  código nuevo (el proyecto puede haber perdido la conexión con GitHub o estar esperando los ajustes nuevos).
+- **Pendiente del autor:** los ajustes de Settings → Builds (comando, carpeta de salida y rama `main`), volver a desplegar y
+  avisar para comprobar `/version.txt` («sitio: amazon») y el QR.
+
 ### Lo que estas comprobaciones NO cubren
 
 - **La construcción en Cloudflare:** no se ha probado allí (versión de Python, `git`, carpeta de salida). Aquí, con
