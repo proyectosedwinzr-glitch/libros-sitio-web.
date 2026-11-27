@@ -11,11 +11,25 @@ El sitio tiene **dos partes**:
 ---
 
 
+## Dos sitios (desde el 25 de noviembre de 2026)
+Del mismo repositorio y de los mismos CSV salen dos sitios (ver `datos/sitios.csv` y `docs/dos_sitios/`):
+
+| Sitio | Dirección | Qué lleva | Cómo se publica |
+|---|---|---|---|
+| **Completo** | https://ediciones-edwin-zar.pages.dev | Amazon, Hotmart, pedidos de Colombia y «La historia del día» (`/hoy/`) | `python3 herramientas/construir.py --sitio completo --salida ../salida-completo --zip` y se arrastra el zip `sitio-completo-…zip` al proyecto `ediciones-edwin-zar` |
+| **Amazon** | https://libros-edwin-zar.pages.dev | Solo los libros de Amazon (sin Hotmart ni pedidos de Colombia, `noindex`). **Es la dirección que se imprime en los productos de Amazon.** | Proyecto `libros-edwin-zar`, conectado a GitHub: se construye solo con `python3 herramientas/construir.py --sitio amazon --salida salida-amazon` al juntar cambios en `main` |
+
+- Tras cada subida, abrir `/version.txt` del sitio: dice qué sitio es, cuándo se construyó y de qué commit.
+- **QR:** `/qr` del sitio completo lleva al sitio Amazon (lo ya impreso sigue funcionando); los productos nuevos de Amazon
+  imprimen el QR del sitio Amazon (`imagenes/qr/qr-libros-edwin-zar.svg` y `-1200.png`, que lleva a `https://libros-edwin-zar.pages.dev/qr`).
+  Las ediciones de Hotmart, desde ahora, `https://ediciones-edwin-zar.pages.dev/digital`.
+- Comprobación de los dos sitios: `python3 -I herramientas/pruebas/comprobar_sitios.py LINEA_BASE --prueba`.
+
 ## Dónde está publicado el sitio
 - **Principal (limpia):** https://ediciones-edwin-zar.pages.dev/ — Amazon y Hotmart, sin pestaña Colombia. Páginas por idioma: `/es/`, `/en/`, `/fr/`, `/it/`.
 - **Pedidos en Colombia (Bre-B):** https://ediciones-edwin-zar.pages.dev/colombia — solo para clientes en Colombia.
 - **Pedidos contra entrega:** https://ediciones-edwin-zar.pages.dev/contraentrega
-- **Destino del QR** (va en la edición de Hotmart): https://ediciones-edwin-zar.pages.dev/qr → la página principal (Amazon y Hotmart).
+- **Destino del QR ya impreso:** https://ediciones-edwin-zar.pages.dev/qr → desde los dos sitios, el sitio Amazon (antes, la página principal).
 - Se publica en **Cloudflare Pages por subida directa** (proyecto `ediciones-edwin-zar`): no depende de GitHub.
 
 
@@ -31,7 +45,7 @@ El sitio tiene **dos partes**:
 
 Prueba sin navegador: `curl -s https://ediciones-edwin-zar.pages.dev/fr/ | grep "Lettres et histoires"` debe mostrar el título.
 
-**Antes de comprimir** se pueden quitar `herramientas/`, `apps-script/`, `README.md` y `.gitignore`: no hacen falta en el sitio publicado.
+Con `--salida`, `construir.py` ya no copia lo que no es del sitio (`privado/` nunca; tampoco `herramientas/`, `docs/`, `apps-script/`, `README.md` ni `CLAUDE.md`): se comprime la carpeta de salida tal cual. «La historia del día» (`/hoy/`): ver `CLAUDE.md` y `docs/hoy/`.
 
 ## 1. La hoja de Google Sheets del catálogo (pública)
 

@@ -1,0 +1,3 @@
+sitio,url,hotmart,colombia,hoy,indexar,qr_destino,nota
+completo,https://ediciones-edwin-zar.pages.dev,sí,sí,sí,sí,https://libros-edwin-zar.pages.dev/,El actual. /qr lleva al sitio Amazon; /digital es para las ediciones de Hotmart.
+amazon,https://libros-edwin-zar.pages.dev,no,no,no,no,/,Solo libros de Amazon. Es la dirección que se imprime en los productos de Amazon. Opción A (25 nov. 2026): proyecto antiguo libros-edwin-zar, conectado a GitHub; sin /hoy/.
