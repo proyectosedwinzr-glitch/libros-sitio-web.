@@ -99,12 +99,49 @@ Cada etapa: qué se hizo, qué se comprobó y **qué no cubren las comprobacione
 - **Pendiente del autor:** los ajustes de Settings → Builds (comando, carpeta de salida y rama `main`), volver a desplegar y
   avisar para comprobar `/version.txt` («sitio: amazon») y el QR.
 
+### Etapa 4 · 27 de noviembre: el sitio Amazon, publicado y comprobado en la red
+
+- **Diagnóstico (corrige lo anterior):** Cloudflare sí había desplegado `main` (`fb0793c`) al juntar: GitHub estaba
+  conectado y la rama de producción era `main`. Pero, sin comando de construcción, publicaba el repositorio tal cual (con
+  Hotmart, `docs/`, `herramientas/`…). Se vio comparando sus archivos con los del commit.
+- **El autor cambió** Settings → Build configuration (el comando y la carpeta `salida-amazon`) y pulsó **Retry deployment**
+  en la fila `Production · main fb0793c`. Unos 4 minutos después, `/version.txt` decía
+  `sitio: amazon · construido: 2026-11-27 04:55 · commit: fb0793c` (hora de Cloudflare, UTC).
+- **Comprobado en la red:**
+  - los 20 archivos que se sirven son **idénticos, byte a byte,** a los de una construcción local del mismo commit (sin
+    contar `version.txt`; `_redirects` no se sirve);
+  - ninguna de las 11 palabras prohibidas de `comprobar_sitios.py` (número de WhatsApp incluido) en sus 22 archivos; con un
+    enlace de Hotmart plantado, la búsqueda salta;
+  - en Chromium:
+    - páginas: `/` a 390, 820 y 1280 px; `/es/`, `/en/`, `/fr/`, `/it/` y `/qr` a 390 px;
+    - sin errores de JavaScript, sin peticiones a terceros, con `noindex` y sin desbordes;
+    - 30 enlaces a Amazon por página y ningún enlace externo que no sea de Amazon;
+  - «Colombia» solo sale en el selector de país («🇨🇴 Colombia», que lleva a Amazon.com) y en su nota (`pais_co_amazon`):
+    es la tienda de Amazon para quien compra desde Colombia, no los pedidos;
+  - `/qr` → 302 → `/`, el sitio Amazon: **el QR nuevo lleva al sitio nuevo**;
+  - lo que el repositorio publicaba antes ahora da la portada: `/datos/hotmart.csv`, `/colombia`, `/contraentrega`, `/hoy/`,
+    `/digital`, `/README.md`, `/CLAUDE.md` y `/docs/hoy/PLAN.md`.
+- **Caché de Cloudflare:**
+  - dos archivos internos pedidos al comprobar el sitio antiguo (`/docs/dos_sitios/CAMBIOS.md` y
+    `/herramientas/construir.py`) siguen saliendo de la caché (`cf-cache-status: HIT`, `s-maxage=604800`);
+  - caducan solos, como mucho el 4 de diciembre (UTC); con cualquier `?…` detrás ya dan la portada;
+  - ninguna página los enlaza, y son públicos en GitHub.
+- **Columna vacía:** `datos/catalogo.csv`, que la especificación copia tal cual al sitio Amazon, lleva la cabecera
+  `ID Colombia` sin ningún valor. No es una palabra prohibida; si el autor quiere, se quita en el sitio Amazon.
+- **Desde ahora,** cada cambio que entre en `main` reconstruye el sitio Amazon solo (despliegues automáticos).
+- **README.md** (paso 3 de «En los dos casos»):
+  - los ajustes del proyecto `libros-edwin-zar` y cómo reconstruir sin cambios;
+  - el destino del QR, que ahora va en `datos/sitios.csv`;
+  - GitHub Pages queda como histórico.
+- **Pendiente del autor:** el 30 de noviembre, subir el zip del sitio completo a `ediciones-edwin-zar` y escanear con dos
+  móviles el QR impreso (`ediciones-edwin-zar.pages.dev/qr`, que hasta entonces lleva a su propia portada) y el nuevo.
+
 ### Lo que estas comprobaciones NO cubren
 
-- **La construcción en Cloudflare:** no se ha probado allí (versión de Python, `git`, carpeta de salida). Aquí, con
-  Python 3.13 y solo la biblioteca estándar. Hay que mirar el registro del primer despliegue y `/version.txt`.
-- **Hasta los pasos 1 a 3,** `libros-edwin-zar.pages.dev` sigue sirviendo una copia antigua del sitio completo, **con
-  Hotmart**. Y hasta subir el completo nuevo, `/qr` sigue llevando a su página principal y `/digital` no existe.
+- **La construcción en Cloudflare** funciona desde el 27 de noviembre, pero su versión de Python no se ve desde aquí. Si
+  un despliegue falla, hay que mirar su registro.
+- **Hasta subir el completo nuevo** (30 de noviembre), `ediciones-edwin-zar.pages.dev/qr` sigue llevando a su página
+  principal y `/digital` no existe.
 - **Lo que pinta el JavaScript:** `comprobar_sitios.py` lee el HTML escrito y todos los archivos; los enlaces que crea
   `app.js` al cargar solo se han visto en las capturas de 3 páginas.
 - **Las palabras prohibidas** se buscan tal cual: una mención escrita de otra forma («Hot mart») o un logotipo dentro de
@@ -121,4 +158,6 @@ git worktree add /tmp/base 256d441 && python3 -I /tmp/base/herramientas/construi
 python3 -I herramientas/pruebas/comprobar_sitios.py /tmp/base-completo --hoy-fecha 2026-12-04 --prueba
 python3 -I herramientas/construir.py --sitio amazon --salida /tmp/amazon && node herramientas/pruebas/capturas.js /tmp/amazon / /es/ /en/
 python3 herramientas/qr/qr_sitio.py leer imagenes/qr/qr-libros-edwin-zar-1200.png https://libros-edwin-zar.pages.dev/qr --prueba
+curl -s https://libros-edwin-zar.pages.dev/version.txt              # sitio: amazon · … · commit: el último de main
+curl -sI https://libros-edwin-zar.pages.dev/qr | grep -i location    # https://libros-edwin-zar.pages.dev/
 ```

@@ -5,7 +5,7 @@ El sitio tiene **dos partes**:
 
 | Parte | Dónde vive | Qué hace |
 |---|---|---|
-| **Sitio público** (pestañas Español, English, 日本語, Français, Deutsch, Italiano) | GitHub Pages (gratis) — archivos `index.html`, `app.js`, `estilos.css`, `config.js` | Muestra los libros y lleva al Amazon de cada país. Los textos y libros se editan en Google Sheets. |
+| **Sitio público** (pestañas Español, English, 日本語, Français, Deutsch, Italiano) | Cloudflare Pages (gratis), en dos sitios: ver «Dos sitios» — archivos `index.html`, `app.js`, `estilos.css`, `config.js` | Muestra los libros y lleva al Amazon de cada país. Los textos y libros se editan en Google Sheets. |
 | **Pedidos Colombia** (pestaña 🇨🇴 Colombia) | Google Apps Script — carpeta `apps-script/` | Formulario, pago Bre-B, comprobantes en Drive y panel con contraseña. |
 
 ---
@@ -20,6 +20,10 @@ Del mismo repositorio y de los mismos CSV salen dos sitios (ver `datos/sitios.cs
 | **Amazon** | https://libros-edwin-zar.pages.dev | Solo los libros de Amazon (sin Hotmart ni pedidos de Colombia, `noindex`). **Es la dirección que se imprime en los productos de Amazon.** | Proyecto `libros-edwin-zar`, conectado a GitHub: se construye solo con `python3 herramientas/construir.py --sitio amazon --salida salida-amazon` al juntar cambios en `main` |
 
 - Tras cada subida, abrir `/version.txt` del sitio: dice qué sitio es, cuándo se construyó y de qué commit.
+- **Proyecto `libros-edwin-zar` en Cloudflare** (Settings → Build configuration; comprobado el 27 de noviembre de 2026):
+  comando `python3 herramientas/construir.py --sitio amazon --salida salida-amazon`, carpeta de salida `salida-amazon`,
+  rama de producción `main` y despliegues automáticos. Para reconstruir sin cambios: Deployments → All deployments →
+  **⋯** de la fila `Production` más reciente → **Retry deployment**.
 - **QR:** `/qr` del sitio completo lleva al sitio Amazon (lo ya impreso sigue funcionando); los productos nuevos de Amazon
   imprimen el QR del sitio Amazon (`imagenes/qr/qr-libros-edwin-zar.svg` y `-1200.png`, que lleva a `https://libros-edwin-zar.pages.dev/qr`).
   Las ediciones de Hotmart, desde ahora, `https://ediciones-edwin-zar.pages.dev/digital`.
@@ -37,11 +41,11 @@ Del mismo repositorio y de los mismos CSV salen dos sitios (ver `datos/sitios.cs
 1. **Libros de Amazon:** se agrega o cambia una fila en `datos/catalogo.csv` (título, idioma, ASIN, portada en `portadas/`, descripción).
 2. **Productos de Hotmart:** se edita `datos/hotmart.csv`. Mientras **Enlace Hotmart** esté vacío, el producto sale como «Próximamente»; al pegar el enlace aparece el botón «Ver en Hotmart». **Mostrar hasta** (AAAA-MM-DD) lo oculta solo después de esa fecha (el bono de Navidad: 2027-01-06).
 3. **Textos del sitio (6 idiomas):** `datos/textos.csv`.
-4. Se construye el sitio con `python3 herramientas/construir.py --salida <carpeta>` (o lo prepara Claude) y se comprime el **contenido** de esa carpeta en un zip.
+4. Se construye el sitio completo con `python3 herramientas/construir.py --sitio completo --salida <carpeta>` (o lo prepara Claude) y se comprime el **contenido** de esa carpeta en un zip.
    Cloudflare → Workers & Pages → `ediciones-edwin-zar` → **Create deployment** → arrastrar el zip → **Save and deploy**. Publica en 1–2 minutos:
    - `/` , `/internacional.html`, `/contraentrega.html` con el catálogo escrito en el HTML;
    - una página por idioma de los libros: `/es/`, `/en/`, `/fr/`, `/it/` (con `hreflang`, `canonical` y `og:`). Si aparece un libro en un idioma nuevo (por ejemplo `de`), su página `/de/` se crea sola.
-5. **Código QR de los libros impresos:** apunta a `https://ediciones-edwin-zar.pages.dev/qr` (archivos en `imagenes/qr/`). El destino se cambia en `_redirects`, sin reimprimir.
+5. **Código QR de los libros impresos:** apunta a `https://ediciones-edwin-zar.pages.dev/qr` (archivos en `imagenes/qr/`). El destino se cambia en `datos/sitios.csv` (columna `qr_destino`; `construir.py` escribe el `_redirects`), sin reimprimir. Los productos nuevos de Amazon llevan el QR del sitio Amazon (ver «Dos sitios»).
 
 Prueba sin navegador: `curl -s https://ediciones-edwin-zar.pages.dev/fr/ | grep "Lettres et histoires"` debe mostrar el título.
 
@@ -107,7 +111,9 @@ Los cambios en la hoja aparecen en el sitio al recargar la página (a veces tard
 
 ---
 
-## 2. Publicar el sitio público en GitHub Pages
+## 2. (Histórico) Publicar el sitio público en GitHub Pages
+> **Ya no se usa:** el sitio vive en Cloudflare Pages (ver «Dos sitios», arriba). Estos pasos quedan solo como referencia.
+
 1. En GitHub, abre este repositorio → **Settings** → **Pages**.
 2. En *Source* elige **Deploy from a branch**, rama `main`, carpeta `/ (root)` → **Save**.
 3. Espera 1–2 minutos. La dirección aparece arriba en esa misma página.
@@ -119,7 +125,7 @@ Los cambios en la hoja aparecen en el sitio al recargar la página (a veces tard
 ## 3. Actualizar la app de pedidos de Colombia (Apps Script)
 1. Abre tu hoja de **pedidos** → **Extensiones → Apps Script**.
 2. Reemplaza todo el contenido de `Código.gs` por el de `apps-script/Codigo.gs`, y el de `index.html` por `apps-script/index.html`.
-3. Arriba de `Código.gs`, vuelve a poner tu **CLAVE**, **WHATSAPP**, **BREB** y **ENVIO_MEDELLIN** reales. Opcional: `CORREO_AVISOS` y `URL_SITIO` (la dirección de GitHub Pages).
+3. Arriba de `Código.gs`, vuelve a poner tu **CLAVE**, **WHATSAPP**, **BREB** y **ENVIO_MEDELLIN** reales. Opcional: `CORREO_AVISOS` y `URL_SITIO` (la dirección del sitio completo: `https://ediciones-edwin-zar.pages.dev`).
 4. Guarda (💾). Elige la función `entrar` en el menú de arriba y pulsa **Ejecutar** una vez: Google te pedirá permiso para **enviar correos** (es nuevo). Acepta. (El error "Contraseña incorrecta" en ese momento es normal.)
 5. **Implementar → Gestionar implementaciones → ✏️ (editar) → Versión: Nueva versión → Implementar.** Así la URL `/exec` no cambia.
 6. Copia esa URL `/exec` en `config.js` → `URL_COLOMBIA`.
